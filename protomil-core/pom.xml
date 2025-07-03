@@ -194,6 +194,22 @@
 					</excludes>
 				</configuration>
 			</plugin>
+			<!-- Add this to your existing pom.xml build plugins section -->
+			<plugin>
+				<groupId>org.flywaydb</groupId>
+				<artifactId>flyway-maven-plugin</artifactId>
+				<version>9.22.3</version>
+				<configuration>
+					<url>jdbc:postgresql://localhost:5432/protomil_db</url>
+					<user>protomil_user</user>
+					<password>protomil_secure_pass_2024</password>
+					<locations>
+						<location>classpath:db/migration</location>
+					</locations>
+					<baselineOnMigrate>true</baselineOnMigrate>
+					<validateOnMigrate>true</validateOnMigrate>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 

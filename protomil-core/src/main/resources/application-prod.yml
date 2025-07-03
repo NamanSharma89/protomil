@@ -1,0 +1,23 @@
+# src/main/resources/application-prod.yml
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/protomil_db}
+    username: ${DATABASE_USERNAME:protomil_user}
+    password: ${DATABASE_PASSWORD:protomil_secure_pass_2024}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 10
+
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        generate_statistics: false
+
+  flyway:
+    clean-disabled: true
+
+logging:
+  level:
+    root: WARN
+    com.protomil: INFO

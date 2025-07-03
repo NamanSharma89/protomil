@@ -1,0 +1,13 @@
+# application.yml
+aws:
+  region: ${AWS_REGION:us-east-1}
+  cognito:
+    userPoolId: ${AWS_COGNITO_USER_POOL_ID}
+    clientId: ${AWS_COGNITO_CLIENT_ID}
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: https://cognito-idp.${aws.region}.amazonaws.com/${aws.cognito.userPoolId}/.well-known/jwks.json

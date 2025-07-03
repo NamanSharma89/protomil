@@ -1,13 +1,22 @@
-# application.yml
-aws:
-  region: ${AWS_REGION:us-east-1}
-  cognito:
-    userPoolId: ${AWS_COGNITO_USER_POOL_ID}
-    clientId: ${AWS_COGNITO_CLIENT_ID}
-
+# src/main/resources/application-dev.yml
 spring:
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: https://cognito-idp.${aws.region}.amazonaws.com/${aws.cognito.userPoolId}/.well-known/jwks.json
+  datasource:
+    url: jdbc:postgresql://localhost:5432/protomil_db
+    username: protomil_user
+    password: protomil_secure_pass_2024
+
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    clean-disabled: false  # Allow clean in dev environment
+
+logging:
+  level:
+    root: INFO
+    com.protomil: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
