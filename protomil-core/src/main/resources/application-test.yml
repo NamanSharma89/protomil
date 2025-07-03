@@ -1,0 +1,39 @@
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  # Test database settings (could use H2 or test PostgreSQL)
+  datasource:
+    url: jdbc:postgresql://localhost:5432/protomil_test_db
+    username: protomil_user
+    password: protomil_secure_pass_2024
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop  # Recreate schema for each test
+    show-sql: true
+
+# Test Management - Similar to dev but more restricted
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,flyway
+  endpoint:
+    health:
+      show-details: always
+  security:
+    enabled: false
+
+# AWS Configuration for Testing
+aws:
+  cognito:
+    enabled: false  # Use mock services in tests
+
+# Test Logging
+logging:
+  level:
+    root: WARN
+    com.protomil: DEBUG
+    org.springframework.test: DEBUG

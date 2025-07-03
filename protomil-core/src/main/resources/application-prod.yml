@@ -1,29 +1,45 @@
-# src/main/resources/application-prod.yml
 spring:
+  config:
+    activate:
+      on-profile: prod
+  
+  # Production database settings
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/protomil_db}
-    username: ${DATABASE_USERNAME:protomil_user}
-    password: ${DATABASE_PASSWORD:protomil_secure_pass_2024}
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
     hikari:
       maximum-pool-size: 20
       minimum-idle: 10
-
+  
   jpa:
     show-sql: false
     properties:
       hibernate:
         generate_statistics: false
 
-  flyway:
-    clean-disabled: true
+# Production Management - Restricted endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,flyway,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+  security:
+    enabled: true
 
-logging:
-  level:
-    root: WARN
-    com.protomil: INFO
-
+# AWS Configuration for Production
 aws:
   cognito:
     enabled: true
     userPoolId: ${AWS_COGNITO_USER_POOL_ID}
     clientId: ${AWS_COGNITO_CLIENT_ID}
+
+# Production Logging - Less verbose
+logging:
+  level:
+    root: WARN
+    com.protomil: INFO
+    org.springframework.security: WARN

@@ -1,8 +1,7 @@
-# src/main/resources/application.yml
 spring:
   application:
     name: protomil-core
-
+  
   datasource:
     url: jdbc:postgresql://localhost:5432/protomil_db
     username: protomil_user
@@ -13,52 +12,40 @@ spring:
       minimum-idle: 5
       idle-timeout: 300000
       connection-timeout: 20000
-      validation-timeout: 5000
-      leak-detection-threshold: 60000
-
+  
   jpa:
     hibernate:
-      ddl-auto: validate  # Important: Use validate with Flyway
+      ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-        use_sql_comments: true
         jdbc:
           time_zone: UTC
-        order_inserts: true
-        order_updates: true
-        batch_size: 25
     open-in-view: false
-
+  
   flyway:
     enabled: true
     baseline-on-migrate: true
-    baseline-version: 0
     locations: classpath:db/migration
-    sql-migration-suffixes: .sql
-    repeatable-sql-migration-prefix: R
-    sql-migration-prefix: V
-    sql-migration-separator: __
     validate-on-migrate: true
     clean-disabled: true
-    out-of-order: false
-    group: false
 
-# Logging configuration
-logging:
-  level:
-    org.springframework.security: DEBUG
-    org.flywaydb: INFO
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-    com.protomil: DEBUG
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+# Basic management endpoints (restrictive by default)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+  security:
+    enabled: true
 
-# AWS Configuration
+# AWS Configuration (empty by default)
 aws:
   region: ${AWS_REGION:us-east-1}
   cognito:
@@ -66,12 +53,10 @@ aws:
     userPoolId: ${AWS_COGNITO_USER_POOL_ID:}
     clientId: ${AWS_COGNITO_CLIENT_ID:}
 
-# Management endpoints
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,flyway
-  endpoint:
-    health:
-      show-details: when-authorized
+# Logging
+logging:
+  level:
+    root: INFO
+    com.protomil: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"

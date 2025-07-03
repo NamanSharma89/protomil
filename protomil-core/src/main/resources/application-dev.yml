@@ -1,26 +1,58 @@
-# src/main/resources/application-dev.yml
 spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/protomil_db
-    username: protomil_user
-    password: protomil_secure_pass_2024
-
+  config:
+    activate:
+      on-profile: dev
+  
+  # Development database settings
   jpa:
     show-sql: true
     properties:
       hibernate:
         format_sql: true
-
+  
+  # Development Flyway settings
   flyway:
-    clean-disabled: false  # Allow clean in dev environment
+    clean-disabled: false  # Allow clean in dev
 
+# Development Management - Expose all endpoints with full details
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"  # Expose ALL endpoints in development
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+    info:
+      enabled: true
+    flyway:
+      enabled: true
+    env:
+      enabled: true
+    configprops:
+      enabled: true
+    metrics:
+      enabled: true
+    loggers:
+      enabled: true
+  security:
+    enabled: false  # Disable actuator security in dev
+
+# AWS Configuration for Development
+aws:
+  cognito:
+    enabled: false  # Disable Cognito in development
+
+# Development Logging - More verbose
 logging:
   level:
     root: INFO
     com.protomil: DEBUG
     org.springframework.security: DEBUG
     org.hibernate.SQL: DEBUG
-
-aws:
-  cognito:
-    enabled: false  # Disable for local development
+    org.springframework.web: DEBUG
+    org.flywaydb: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
