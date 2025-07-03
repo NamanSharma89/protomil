@@ -62,6 +62,7 @@ logging:
 aws:
   region: ${AWS_REGION:us-east-1}
   cognito:
+    enabled: ${AWS_COGNITO_ENABLED:false}
     userPoolId: ${AWS_COGNITO_USER_POOL_ID:}
     clientId: ${AWS_COGNITO_CLIENT_ID:}
 

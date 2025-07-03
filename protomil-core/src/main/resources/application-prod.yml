@@ -21,3 +21,9 @@ logging:
   level:
     root: WARN
     com.protomil: INFO
+
+aws:
+  cognito:
+    enabled: true
+    userPoolId: ${AWS_COGNITO_USER_POOL_ID}
+    clientId: ${AWS_COGNITO_CLIENT_ID}
