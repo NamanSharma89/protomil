@@ -34,8 +34,9 @@ management:
 aws:
   cognito:
     enabled: true
-    userPoolId: ${AWS_COGNITO_USER_POOL_ID}
-    clientId: ${AWS_COGNITO_CLIENT_ID}
+    userPoolId: ${AWS_COGNITO_PROD_USER_POOL_ID}
+    clientId: ${AWS_COGNITO_PROD_CLIENT_ID}
+    region: ${AWS_REGION:us-east-1}
 
 # Production Logging - Less verbose
 logging:

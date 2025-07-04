@@ -11,13 +11,13 @@ spring:
     enabled: true
     baseline-on-migrate: true
 
-# Disable Cognito for local development
 aws:
   cognito:
-    enabled: false
-    userPoolId: ""
-    clientId: ""
-  region: us-east-1
+    enabled: true
+    userPoolId: ${AWS_COGNITO_DEV_USER_POOL_ID:your-dev-pool-id}
+    clientId: ${AWS_COGNITO_DEV_CLIENT_ID:your-dev-client-id}
+    region: ${AWS_REGION:us-east-1}
+  region: ${AWS_REGION:us-east-1}
 
 # Enable all actuator endpoints for dev
 management:
@@ -33,3 +33,5 @@ logging:
   level:
     com.protomil: DEBUG
     org.springframework.security: DEBUG
+    com.protomil.core.user: DEBUG
+    software.amazon.awssdk: DEBUG

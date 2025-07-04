@@ -1,0 +1,39 @@
+<!-- src/main/resources/templates/wireframes/register-success.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Registration Success - Protomil</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; text-align: center; }
+        .success { color: #28a745; font-size: 24px; margin-bottom: 20px; }
+        .details { background: #f8f9fa; padding: 15px; border-radius: 4px; margin: 20px 0; text-align: left; }
+        .btn { background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="success">✓ Registration Successful!</div>
+
+    <div th:if="${userResponse}" class="details">
+        <h4>User Details:</h4>
+        <p><strong>User ID:</strong> <span th:text="${userResponse.userId}"></span></p>
+        <p><strong>Email:</strong> <span th:text="${userResponse.email}"></span></p>
+        <p><strong>Status:</strong> <span th:text="${userResponse.status}"></span></p>
+        <p><strong>Registered At:</strong> <span th:text="${userResponse.registeredAt}"></span></p>
+        <div th:if="${userResponse.emailVerificationRequired}">
+            <p><em>📧 Email verification required</em></p>
+        </div>
+        <div th:if="${userResponse.adminApprovalRequired}">
+            <p><em>👤 Admin approval required</em></p>
+        </div>
+    </div>
+
+    <div>
+        <a href="/wireframes/register" class="btn">Register Another User</a>
+        <a href="/wireframes/" class="btn" style="margin-left: 10px;">Back to Wireframes</a>
+    </div>
+</div>
+</body>
+</html>

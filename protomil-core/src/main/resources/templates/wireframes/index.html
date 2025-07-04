@@ -1,0 +1,33 @@
+<!-- src/main/resources/templates/wireframes/index.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protomil Wireframes</title>
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { border: 1px solid #ddd; padding: 20px; margin: 20px 0; border-radius: 5px; }
+        .btn { background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 3px; }
+        .btn:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Protomil Core - Wireframes</h1>
+    <p>Interactive prototypes for development and testing</p>
+
+    <div class="card">
+        <h3>User Management</h3>
+        <a href="/wireframes/register" class="btn">User Registration Form</a>
+    </div>
+
+    <div class="card">
+        <h3>Authentication Flows</h3>
+        <p>Coming soon: Login, Password Reset</p>
+    </div>
+</div>
+</body>
+</html>
