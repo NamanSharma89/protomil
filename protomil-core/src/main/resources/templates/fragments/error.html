@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Error Fragments</title>
+</head>
+<body>
+<!-- Validation Error Fragment -->
+<div th:fragment="validation-error" class="alert alert-warning alert-dismissible" role="alert">
+    <h6 class="alert-heading">
+        <i class="bi bi-exclamation-triangle"></i>
+        Please check your input
+    </h6>
+    <div th:if="${errorResponse != null and errorResponse.fieldErrors != null and !errorResponse.fieldErrors.isEmpty()}">
+        <ul class="mb-2">
+            <li th:each="fieldEntry : ${errorResponse.fieldErrors.entrySet()}"
+                th:each="error : ${fieldEntry.value}"
+                th:text="${fieldEntry.key + ': ' + error}"></li>
+        </ul>
+    </div>
+    <p class="mb-0" th:text="${errorResponse != null ? errorResponse.message : 'Please correct the highlighted fields'}">Please correct the highlighted fields</p>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+
+<!-- Business Error Fragment -->
+<div th:fragment="business-error" class="alert alert-warning alert-dismissible" role="alert">
+    <h6 class="alert-heading">
+        <i class="bi bi-info-circle"></i>
+        Unable to complete request
+    </h6>
+    <p class="mb-2" th:text="${errorResponse != null ? errorResponse.message : 'A business rule was violated'}">A business rule was violated</p>
+    <small class="text-muted" th:text="${errorResponse != null ? errorResponse.details : ''}"></small>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+
+<!-- Generic Error Fragment -->
+<div th:fragment="generic-error" class="alert alert-danger alert-dismissible" role="alert">
+    <h6 class="alert-heading">
+        <i class="bi bi-exclamation-triangle"></i>
+        Something went wrong
+    </h6>
+    <p class="mb-2" th:text="${errorResponse != null ? errorResponse.message : 'An unexpected error occurred.'}">An unexpected error occurred.</p>
+    <div th:if="${errorResponse != null and errorResponse.canRetry}">
+        <button class="btn btn-outline-danger btn-sm" onclick="location.reload()">
+            <i class="bi bi-arrow-clockwise"></i>
+            Retry
+        </button>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+</body>
+</html>

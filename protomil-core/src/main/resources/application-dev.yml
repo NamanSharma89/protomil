@@ -10,9 +10,19 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
-
+  thymeleaf:
+    cache: false # Disable caching for development
+    prefix: classpath:/templates/
+    suffix: .html
+    encoding: UTF-8
+    mode: HTML
+  web:
+    resources:
+      add-mappings: true
+  mvc:
+    favicon:
+      enabled: false
 aws:
-  # Use environment variable or system property for profile
   profile: ${AWS_PROFILE:protomil-dev}
   region: ${AWS_REGION:ap-south-1}
   cognito:
@@ -40,5 +50,10 @@ logging:
     org.springframework.security: DEBUG
     com.protomil.core.user: DEBUG
     software.amazon.awssdk: DEBUG
-    # Reduce SSO-related noise in logs
     software.amazon.awssdk.services.sso: INFO
+    io.github.wimdeblauwe.htmx: DEBUG # Enable HTMX logging
+
+# HTMX Configuration
+htmx:
+  enabled: true
+  use-htmx-response-headers: true

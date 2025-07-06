@@ -163,6 +163,18 @@
 			<groupId>software.amazon.awssdk</groupId>
 			<artifactId>ssooidc</artifactId>
 		</dependency>
+
+		<!-- Add this to your existing dependencies in pom.xml -->
+		<dependency>
+			<groupId>io.github.wimdeblauwe</groupId>
+			<artifactId>htmx-spring-boot</artifactId>
+			<version>3.6.0</version>
+		</dependency>
+		<dependency>
+			<groupId>io.github.wimdeblauwe</groupId>
+			<artifactId>htmx-spring-boot-thymeleaf</artifactId>
+			<version>3.6.0</version>
+		</dependency>
 	</dependencies>
 	<dependencyManagement>
 		<dependencies>

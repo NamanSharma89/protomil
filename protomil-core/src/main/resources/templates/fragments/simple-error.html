@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Error Fragments</title>
+</head>
+<body>
+<!-- Not Found Fragment -->
+<div th:fragment="not-found" class="alert alert-warning" role="alert">
+    <h6 class="alert-heading">
+        <i class="bi bi-exclamation-triangle"></i>
+        Resource Not Found
+    </h6>
+    <p class="mb-0" th:text="${errorMessage ?: 'The requested resource was not found.'}">The requested resource was not found.</p>
+</div>
+
+<!-- Generic Error Fragment -->
+<div th:fragment="generic" class="alert alert-danger" role="alert">
+    <h6 class="alert-heading">
+        <i class="bi bi-exclamation-triangle"></i>
+        Something Went Wrong
+    </h6>
+    <p class="mb-2" th:text="${errorMessage ?: 'An unexpected error occurred.'}">An unexpected error occurred.</p>
+    <button class="btn btn-outline-danger btn-sm" onclick="location.reload()">
+        <i class="bi bi-arrow-clockwise"></i>
+        Try Again
+    </button>
+</div>
+</body>
+</html>
