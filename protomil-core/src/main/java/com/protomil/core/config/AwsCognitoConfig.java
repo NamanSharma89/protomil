@@ -1,4 +1,3 @@
-// src/main/java/com/protomil/core/config/AwsCognitoConfig.java
 package com.protomil.core.config;
 
 import lombok.extern.slf4j.Slf4j;
@@ -10,10 +9,14 @@ import org.springframework.core.env.Environment;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.InstanceProfileCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProviderChain;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 
 @Configuration
+@ConditionalOnProperty(name = "aws.cognito.enabled", havingValue = "true", matchIfMissing = false)
 @EnableConfigurationProperties(CognitoProperties.class)
 @Slf4j
 public class AwsCognitoConfig {
@@ -25,9 +28,7 @@ public class AwsCognitoConfig {
     }
 
     @Bean
-    @ConditionalOnProperty(name = "aws.cognito.enabled", havingValue = "true")
     public CognitoIdentityProviderClient cognitoClient(CognitoProperties properties) {
-
         AwsCredentialsProvider credentialsProvider = createCredentialsProvider();
 
         log.info("Initializing Cognito client for region: {} with credentials provider: {}",
@@ -41,24 +42,55 @@ public class AwsCognitoConfig {
 
     private AwsCredentialsProvider createCredentialsProvider() {
         boolean isDevelopment = isDevelopmentEnvironment();
-        String awsProfile = System.getenv("AWS_PROFILE");
+        String awsProfile = getAwsProfile();
 
         if (isDevelopment && awsProfile != null && !awsProfile.isEmpty()) {
             log.info("Development environment detected. Using AWS profile: {}", awsProfile);
+
             try {
-                return ProfileCredentialsProvider.create(awsProfile);
+                // Create a credentials chain that falls back gracefully
+                return AwsCredentialsProviderChain.of(
+                        ProfileCredentialsProvider.create(awsProfile),
+                        EnvironmentVariableCredentialsProvider.create(),
+                        DefaultCredentialsProvider.create()
+                );
             } catch (Exception e) {
-                log.warn("Failed to create profile credentials provider for profile: {}. Falling back to default.", awsProfile, e);
-                return DefaultCredentialsProvider.create();
+                log.warn("Failed to create profile credentials provider for profile: {}. Falling back to default.",
+                        awsProfile, e);
+                return createFallbackCredentialsProvider();
             }
         } else {
             if (!isDevelopment) {
-                log.info("Production environment detected. Using DefaultCredentialsProvider (IAM roles)");
+                log.info("Production environment detected. Using instance profile or environment credentials");
+                return AwsCredentialsProviderChain.of(
+                        EnvironmentVariableCredentialsProvider.create(),
+                        InstanceProfileCredentialsProvider.create(),
+                        DefaultCredentialsProvider.create()
+                );
             } else {
-                log.info("Development environment but no AWS_PROFILE set. Using DefaultCredentialsProvider");
+                log.info("Development environment but no AWS_PROFILE set. Using default credentials chain");
+                return createFallbackCredentialsProvider();
             }
-            return DefaultCredentialsProvider.create();
         }
+    }
+
+    private AwsCredentialsProvider createFallbackCredentialsProvider() {
+        return AwsCredentialsProviderChain.of(
+                EnvironmentVariableCredentialsProvider.create(),
+                DefaultCredentialsProvider.create()
+        );
+    }
+
+    private String getAwsProfile() {
+        // Check multiple sources for AWS profile
+        String profile = System.getenv("AWS_PROFILE");
+        if (profile == null || profile.isEmpty()) {
+            profile = System.getProperty("aws.profile");
+        }
+        if (profile == null || profile.isEmpty()) {
+            profile = environment.getProperty("aws.profile");
+        }
+        return profile;
     }
 
     private boolean isDevelopmentEnvironment() {

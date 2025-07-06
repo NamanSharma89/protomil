@@ -12,14 +12,19 @@ spring:
     baseline-on-migrate: true
 
 aws:
+  # Use environment variable or system property for profile
+  profile: ${AWS_PROFILE:protomil-dev}
+  region: ${AWS_REGION:ap-south-1}
   cognito:
     enabled: true
     userPoolId: ${AWS_COGNITO_DEV_USER_POOL_ID:your-dev-pool-id}
     clientId: ${AWS_COGNITO_DEV_CLIENT_ID:your-dev-client-id}
-    region: ${AWS_REGION:us-east-1}
-  region: ${AWS_REGION:us-east-1}
+    region: ${AWS_REGION:ap-south-1}
+    authFlows:
+      - ALLOW_ADMIN_USER_PASSWORD_AUTH
+      - ALLOW_USER_PASSWORD_AUTH
+      - ALLOW_REFRESH_TOKEN_AUTH
 
-# Enable all actuator endpoints for dev
 management:
   endpoints:
     web:
@@ -35,3 +40,5 @@ logging:
     org.springframework.security: DEBUG
     com.protomil.core.user: DEBUG
     software.amazon.awssdk: DEBUG
+    # Reduce SSO-related noise in logs
+    software.amazon.awssdk.services.sso: INFO
