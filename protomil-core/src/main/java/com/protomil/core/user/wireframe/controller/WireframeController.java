@@ -4,8 +4,6 @@ import com.protomil.core.shared.exception.BusinessException;
 import com.protomil.core.user.dto.UserRegistrationRequest;
 import com.protomil.core.user.dto.UserRegistrationResponse;
 import com.protomil.core.user.service.UserRegistrationService;
-import io.github.wimdeblauwe.htmx.spring.boot.mvc.HtmxResponse;
-import io.github.wimdeblauwe.htmx.spring.boot.mvc.HxRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,156 +41,196 @@ public class WireframeController {
 
     @GetMapping("/register")
     public String showRegistrationForm(Model model) {
-        // Initialize all required model attributes
-        model.addAttribute("userRegistration", new UserRegistrationRequest());
+        initializeFormModel(model, new UserRegistrationRequest());
         model.addAttribute("pageTitle", "User Registration - Protomil");
-
-        // Initialize boolean flags to prevent null pointer issues
-        model.addAttribute("registrationSuccess", false);
-        model.addAttribute("hasErrors", false);
-        model.addAttribute("errorMessage", null);
-        model.addAttribute("fieldErrors", new HashMap<String, String>());
-
+        log.debug("Displaying registration form");
         return "wireframes/register";
     }
 
     @PostMapping("/register")
-    @HxRequest
     public String processRegistration(
             @Valid @ModelAttribute("userRegistration") UserRegistrationRequest request,
             BindingResult bindingResult,
             Model model,
-            HtmxResponse htmxResponse) {
+            HttpServletRequest httpRequest) {
 
-        // Always initialize base attributes
-        model.addAttribute("registrationSuccess", false);
-        model.addAttribute("hasErrors", false);
-        model.addAttribute("errorMessage", null);
-        model.addAttribute("fieldErrors", new HashMap<String, String>());
+        log.info("Processing registration request for email: {}", request.getEmail());
 
+        // Initialize model with form data
+        initializeFormModel(model, request);
+
+        // Handle validation errors
         if (bindingResult.hasErrors()) {
-            // Add field-specific errors to model
-            Map<String, String> fieldErrors = new HashMap<>();
-            for (FieldError error : bindingResult.getFieldErrors()) {
-                fieldErrors.put(error.getField(), error.getDefaultMessage());
-            }
+            Map<String, String> fieldErrors = extractFieldErrors(bindingResult);
             model.addAttribute("fieldErrors", fieldErrors);
             model.addAttribute("hasErrors", true);
 
             log.debug("Validation errors: {}", fieldErrors);
-
-            // Return just the form fragment to avoid full page reload
-            return "wireframes/register :: registration-form";
+            return getViewName(httpRequest, "wireframes/register");
         }
 
         try {
             UserRegistrationResponse response = userRegistrationService.registerUser(request);
 
+            // Success case
             model.addAttribute("registrationSuccess", true);
             model.addAttribute("userEmail", response.getEmail());
             model.addAttribute("userId", response.getUserId());
             model.addAttribute("emailVerificationRequired", response.getEmailVerificationRequired());
             model.addAttribute("adminApprovalRequired", response.getAdminApprovalRequired());
 
-            // Trigger a custom event for potential further processing
-            htmxResponse.addTrigger("user-registered");
-
             log.info("User registration successful for email: {}", response.getEmail());
-            return "wireframes/register :: success-message";
+            return getViewName(httpRequest, "wireframes/register");
 
         } catch (BusinessException e) {
             log.error("Business error during registration: {}", e.getMessage());
-            model.addAttribute("errorMessage", e.getMessage());
+
             model.addAttribute("hasErrors", true);
-            return "wireframes/register :: error-message";
+            model.addAttribute("errorMessage", e.getMessage());
+
+            // Add suggestions based on error type
+            if (e.getMessage().contains("already exists")) {
+                model.addAttribute("suggestions", List.of(
+                        "Try logging in if you already have an account",
+                        "Use a different email address",
+                        "Contact support if you believe this is an error"
+                ));
+            }
+
+            return getViewName(httpRequest, "wireframes/register");
 
         } catch (Exception e) {
             log.error("Unexpected error during registration", e);
-            model.addAttribute("errorMessage", "An unexpected error occurred. Please try again.");
+
             model.addAttribute("hasErrors", true);
-            return "wireframes/register :: error-message";
+            model.addAttribute("errorMessage", "An unexpected error occurred. Please try again.");
+            model.addAttribute("errorDetails", "If the problem persists, please contact support.");
+
+            return getViewName(httpRequest, "wireframes/register");
         }
     }
 
     @PostMapping("/validate-email")
-    @HxRequest
     @ResponseBody
     public String validateEmail(@RequestParam("email") String email) {
         try {
-            // Simple email validation
             if (email == null || email.trim().isEmpty()) {
-                return "<span class='error-text'>Email is required</span>";
+                return "<small class='text-danger'><i class='bi bi-x-circle me-1'></i>Email is required</small>";
             }
 
             if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-                return "<span class='error-text'>Please enter a valid email address</span>";
+                return "<small class='text-danger'><i class='bi bi-x-circle me-1'></i>Please enter a valid email address</small>";
             }
 
-            return "<span class='success-text'>✓ Email looks good</span>";
+            return "<small class='text-success'><i class='bi bi-check-circle me-1'></i>Email looks good</small>";
 
         } catch (Exception e) {
             log.error("Error validating email: {}", email, e);
-            return "<span class='error-text'>Error validating email</span>";
+            return "<small class='text-warning'><i class='bi bi-exclamation-triangle me-1'></i>Unable to validate email</small>";
         }
     }
 
     @PostMapping("/validate-phone")
-    @HxRequest
     @ResponseBody
     public String validatePhone(@RequestParam("phoneNumber") String phoneNumber) {
         try {
             if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
-                return "<span class='error-text'>Phone number is required</span>";
+                return "<small class='text-danger'><i class='bi bi-x-circle me-1'></i>Phone number is required</small>";
             }
 
             if (!phoneNumber.matches("^\\+?[1-9]\\d{1,14}$")) {
-                return "<span class='error-text'>Please enter a valid phone number</span>";
+                return "<small class='text-danger'><i class='bi bi-x-circle me-1'></i>Please enter a valid phone number</small>";
             }
 
-            return "<span class='success-text'>✓ Phone number looks good</span>";
+            return "<small class='text-success'><i class='bi bi-check-circle me-1'></i>Phone number looks good</small>";
 
         } catch (Exception e) {
             log.error("Error validating phone: {}", phoneNumber, e);
-            return "<span class='error-text'>Error validating phone number</span>";
+            return "<small class='text-warning'><i class='bi bi-exclamation-triangle me-1'></i>Unable to validate phone</small>";
         }
     }
 
     @PostMapping("/check-password-strength")
-    @HxRequest
     @ResponseBody
     public String checkPasswordStrength(@RequestParam("password") String password) {
         if (password == null || password.isEmpty()) {
-            return "<div class='password-strength weak'>Password is required</div>";
+            return "<small class='text-muted'>Enter a password to see strength</small>";
         }
 
-        int score = 0;
-        String feedback = "";
+        int score = calculatePasswordScore(password);
+        String feedback = getPasswordFeedback(password, score);
+        String colorClass = getPasswordColorClass(score);
+        String icon = getPasswordIcon(score);
 
+        return String.format("<small class='%s'><i class='%s me-1'></i>%s</small>",
+                colorClass, icon, feedback);
+    }
+
+    // Helper methods
+    private void initializeFormModel(Model model, UserRegistrationRequest request) {
+        model.addAttribute("userRegistration", request);
+        model.addAttribute("registrationSuccess", false);
+        model.addAttribute("hasErrors", false);
+        model.addAttribute("errorMessage", null);
+        model.addAttribute("fieldErrors", new HashMap<String, String>());
+    }
+
+    private Map<String, String> extractFieldErrors(BindingResult bindingResult) {
+        Map<String, String> fieldErrors = new HashMap<>();
+        for (FieldError error : bindingResult.getFieldErrors()) {
+            fieldErrors.put(error.getField(), error.getDefaultMessage());
+        }
+        return fieldErrors;
+    }
+
+    private String getViewName(HttpServletRequest request, String defaultView) {
+        return isHtmxRequest(request) ? "wireframes/register :: main-content" : defaultView;
+    }
+
+    private boolean isHtmxRequest(HttpServletRequest request) {
+        return "true".equals(request.getHeader("HX-Request"));
+    }
+
+    private int calculatePasswordScore(String password) {
+        int score = 0;
         if (password.length() >= 8) score++;
         if (password.matches(".*[a-z].*")) score++;
         if (password.matches(".*[A-Z].*")) score++;
         if (password.matches(".*\\d.*")) score++;
         if (password.matches(".*[@$!%*?&].*")) score++;
+        return score;
+    }
 
-        switch (score) {
-            case 0, 1, 2 -> {
-                feedback = "Weak - " + getPasswordRequirements(password);
-                return "<div class='password-strength weak'>" + feedback + "</div>";
-            }
-            case 3, 4 -> {
-                feedback = "Fair - " + getPasswordRequirements(password);
-                return "<div class='password-strength fair'>" + feedback + "</div>";
-            }
-            case 5 -> {
-                return "<div class='password-strength strong'>✓ Strong password</div>";
-            }
-        }
+    private String getPasswordFeedback(String password, int score) {
+        return switch (score) {
+            case 0, 1, 2 -> "Weak - " + getPasswordRequirements(password);
+            case 3, 4 -> "Good - " + getPasswordRequirements(password);
+            case 5 -> "Strong password";
+            default -> "Enter a password";
+        };
+    }
 
-        return "<div class='password-strength weak'>Please enter a password</div>";
+    private String getPasswordColorClass(int score) {
+        return switch (score) {
+            case 0, 1, 2 -> "text-danger";
+            case 3, 4 -> "text-warning";
+            case 5 -> "text-success";
+            default -> "text-muted";
+        };
+    }
+
+    private String getPasswordIcon(int score) {
+        return switch (score) {
+            case 0, 1, 2 -> "bi bi-shield-exclamation";
+            case 3, 4 -> "bi bi-shield-check";
+            case 5 -> "bi bi-shield-fill-check";
+            default -> "bi bi-shield";
+        };
     }
 
     private String getPasswordRequirements(String password) {
-        StringBuilder requirements = new StringBuilder("Needs: ");
+        StringBuilder requirements = new StringBuilder("needs: ");
+
         if (password.length() < 8) requirements.append("8+ chars, ");
         if (!password.matches(".*[a-z].*")) requirements.append("lowercase, ");
         if (!password.matches(".*[A-Z].*")) requirements.append("uppercase, ");

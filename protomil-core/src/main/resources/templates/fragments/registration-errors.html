@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Registration Error Fragments</title>
+</head>
+<body>
+
+<!-- Success Message Fragment -->
+<div th:fragment="success-message" class="alert alert-success alert-dismissible fade show" role="alert">
+    <div class="d-flex align-items-center">
+        <i class="bi bi-check-circle-fill me-2 fs-4"></i>
+        <div class="flex-grow-1">
+            <h5 class="alert-heading mb-2">Registration Successful!</h5>
+            <p class="mb-2">Welcome to Protomil, <strong th:text="${userEmail ?: 'New User'}">user@example.com</strong>!</p>
+            <p class="mb-2" th:if="${userId}">Your user ID is: <code th:text="${userId}">user-id</code></p>
+
+            <div th:if="${emailVerificationRequired == true}" class="mt-2">
+                <hr class="my-2">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-envelope-check me-2"></i>
+                    <small class="mb-0">Please check your email to verify your account.</small>
+                </div>
+            </div>
+
+            <div th:if="${adminApprovalRequired == true}" class="mt-2">
+                <hr class="my-2">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-clock-history me-2"></i>
+                    <small class="mb-0">Your account is pending admin approval.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+
+<!-- General Error Message Fragment -->
+<div th:fragment="error-message" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <div class="d-flex align-items-start">
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-4 text-danger"></i>
+        <div class="flex-grow-1">
+            <h6 class="alert-heading mb-2">Registration Failed</h6>
+            <p class="mb-0" th:text="${errorMessage ?: 'An unexpected error occurred during registration.'}">
+                An error occurred during registration.
+            </p>
+            <small class="text-muted mt-1 d-block" th:if="${errorDetails}" th:text="${errorDetails}"></small>
+        </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+
+<!-- Validation Errors Fragment -->
+<div th:fragment="validation-errors" th:if="${fieldErrors != null and !fieldErrors.isEmpty()}"
+     class="alert alert-warning alert-dismissible fade show" role="alert">
+    <div class="d-flex align-items-start">
+        <i class="bi bi-exclamation-circle-fill me-2 fs-4 text-warning"></i>
+        <div class="flex-grow-1">
+            <h6 class="alert-heading mb-2">Please correct the following errors:</h6>
+            <ul class="mb-0 ps-3">
+                <li th:each="error : ${fieldErrors.entrySet()}"
+                    th:text="${error.key + ': ' + error.value}"
+                    class="mb-1"></li>
+            </ul>
+        </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+
+<!-- Business Error Fragment (for duplicate email, etc.) -->
+<div th:fragment="business-error" class="alert alert-info alert-dismissible fade show" role="alert">
+    <div class="d-flex align-items-start">
+        <i class="bi bi-info-circle-fill me-2 fs-4 text-info"></i>
+        <div class="flex-grow-1">
+            <h6 class="alert-heading mb-2">Unable to Complete Registration</h6>
+            <p class="mb-0" th:text="${errorMessage ?: 'A business rule prevented registration.'}">
+                A business rule prevented registration.
+            </p>
+            <div th:if="${suggestions != null and !suggestions.isEmpty()}" class="mt-2">
+                <small class="text-muted">Suggestions:</small>
+                <ul class="small text-muted mb-0 ps-3">
+                    <li th:each="suggestion : ${suggestions}" th:text="${suggestion}"></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+
+<!-- Loading State Fragment -->
+<div th:fragment="loading-state" class="alert alert-primary" role="alert">
+    <div class="d-flex align-items-center">
+        <div class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></div>
+        <span>Processing your registration...</span>
+    </div>
+</div>
+
+<!-- Field-specific validation feedback fragments -->
+<div th:fragment="field-error" class="invalid-feedback d-block">
+    <small th:text="${errorMessage}" class="text-danger"></small>
+</div>
+
+<div th:fragment="field-success" class="valid-feedback d-block">
+    <small th:text="${successMessage}" class="text-success">
+        <i class="bi bi-check-circle me-1"></i><span th:text="${successMessage}">Looks good!</span>
+    </small>
+</div>
+
+<div th:fragment="field-warning" class="text-warning">
+    <small th:text="${warningMessage}" class="d-block mt-1">
+        <i class="bi bi-exclamation-triangle me-1"></i><span th:text="${warningMessage}">Warning message</span>
+    </small>
+</div>
+
+</body>
+</html>
