@@ -64,9 +64,201 @@
                     <small>Join the Protomil platform</small>
                 </div>
 
-                <!-- Main Content Area -->
-                <div id="main-content" class="card-body p-4">
-                    <div th:replace="~{wireframes/register :: main-content}"></div>
+                <div class="card-body p-4">
+                    <!-- Success Message -->
+                    <div th:if="${registrationSuccess == true}" class="alert alert-success alert-dismissible fade show" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill me-2 fs-4"></i>
+                            <div class="flex-grow-1">
+                                <h5 class="alert-heading mb-2">Registration Successful!</h5>
+                                <p class="mb-2">Welcome to Protomil, <strong th:text="${userEmail}">user@example.com</strong>!</p>
+                                <p class="mb-2" th:if="${userId}">Your user ID is: <code th:text="${userId}">user-id</code></p>
+
+                                <div th:if="${emailVerificationRequired == true}" class="mt-2">
+                                    <hr class="my-2">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-envelope-check me-2"></i>
+                                        <small class="mb-0">Please check your email to verify your account.</small>
+                                    </div>
+                                </div>
+
+                                <div th:if="${adminApprovalRequired == true}" class="mt-2">
+                                    <hr class="my-2">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-clock-history me-2"></i>
+                                        <small class="mb-0">Your account is pending admin approval.</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+
+                    <!-- Error Messages -->
+                    <div th:if="${hasErrors == true}">
+                        <!-- Validation Errors -->
+                        <div th:if="${fieldErrors != null and !fieldErrors.isEmpty()}"
+                             class="alert alert-warning alert-dismissible fade show" role="alert">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-exclamation-circle-fill me-2 fs-4 text-warning"></i>
+                                <div class="flex-grow-1">
+                                    <h6 class="alert-heading mb-2">Please correct the following errors:</h6>
+                                    <ul class="mb-0 ps-3">
+                                        <li th:each="error : ${fieldErrors.entrySet()}"
+                                            th:text="${error.key + ': ' + error.value}"
+                                            class="mb-1"></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+
+                        <!-- General Errors -->
+                        <div th:if="${errorMessage != null and (fieldErrors == null or fieldErrors.isEmpty())}"
+                             class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-exclamation-triangle-fill me-2 fs-4 text-danger"></i>
+                                <div class="flex-grow-1">
+                                    <h6 class="alert-heading mb-2">Registration Failed</h6>
+                                    <p class="mb-0" th:text="${errorMessage}">An error occurred during registration.</p>
+                                    <small class="text-muted mt-1 d-block" th:if="${errorDetails}" th:text="${errorDetails}"></small>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    </div>
+
+                    <!-- Registration Form (only show if not successful) -->
+                    <div th:if="${registrationSuccess != true}">
+                        <form th:action="@{/wireframes/register}"
+                              method="post"
+                              th:object="${userRegistration}"
+                              class="position-relative"
+                              novalidate>
+
+                            <!-- Personal Information -->
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="firstName" class="form-label">First Name *</label>
+                                    <input type="text"
+                                           class="form-control"
+                                           th:classappend="${fieldErrors != null and fieldErrors.containsKey('firstName')} ? 'is-invalid' : ''"
+                                           id="firstName"
+                                           th:field="*{firstName}"
+                                           placeholder="Enter your first name"
+                                           required>
+                                    <div class="invalid-feedback" th:if="${fieldErrors != null and fieldErrors.containsKey('firstName')}"
+                                         th:text="${fieldErrors.firstName}"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="lastName" class="form-label">Last Name *</label>
+                                    <input type="text"
+                                           class="form-control"
+                                           th:classappend="${fieldErrors != null and fieldErrors.containsKey('lastName')} ? 'is-invalid' : ''"
+                                           id="lastName"
+                                           th:field="*{lastName}"
+                                           placeholder="Enter your last name"
+                                           required>
+                                    <div class="invalid-feedback" th:if="${fieldErrors != null and fieldErrors.containsKey('lastName')}"
+                                         th:text="${fieldErrors.lastName}"></div>
+                                </div>
+                            </div>
+
+                            <!-- Email -->
+                            <div class="mt-3">
+                                <label for="email" class="form-label">Email Address *</label>
+                                <input type="email"
+                                       class="form-control"
+                                       th:classappend="${fieldErrors != null and fieldErrors.containsKey('email')} ? 'is-invalid' : ''"
+                                       id="email"
+                                       th:field="*{email}"
+                                       placeholder="name@company.com"
+                                       required>
+                                <div id="email-feedback" class="validation-feedback mt-1"></div>
+                                <div class="invalid-feedback" th:if="${fieldErrors != null and fieldErrors.containsKey('email')}"
+                                     th:text="${fieldErrors.email}"></div>
+                            </div>
+
+                            <!-- Phone Number -->
+                            <div class="mt-3">
+                                <label for="phoneNumber" class="form-label">Phone Number *</label>
+                                <input type="tel"
+                                       class="form-control"
+                                       th:classappend="${fieldErrors != null and fieldErrors.containsKey('phoneNumber')} ? 'is-invalid' : ''"
+                                       id="phoneNumber"
+                                       th:field="*{phoneNumber}"
+                                       placeholder="+919876543210"
+                                       required>
+                                <div id="phone-feedback" class="validation-feedback mt-1"></div>
+                                <div class="invalid-feedback" th:if="${fieldErrors != null and fieldErrors.containsKey('phoneNumber')}"
+                                     th:text="${fieldErrors.phoneNumber}"></div>
+                            </div>
+
+                            <!-- Password -->
+                            <div class="mt-3">
+                                <label for="password" class="form-label">Password *</label>
+                                <input type="password"
+                                       class="form-control"
+                                       th:classappend="${fieldErrors != null and fieldErrors.containsKey('password')} ? 'is-invalid' : ''"
+                                       id="password"
+                                       th:field="*{password}"
+                                       placeholder="Enter a strong password"
+                                       required>
+                                <div id="password-feedback" class="validation-feedback mt-1"></div>
+                                <div class="invalid-feedback" th:if="${fieldErrors != null and fieldErrors.containsKey('password')}"
+                                     th:text="${fieldErrors.password}"></div>
+                            </div>
+
+                            <!-- Optional Fields -->
+                            <div class="row g-3 mt-3">
+                                <div class="col-md-6">
+                                    <label for="employeeId" class="form-label">Employee ID</label>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="employeeId"
+                                           th:field="*{employeeId}"
+                                           placeholder="Employee ID (optional)">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="department" class="form-label">Department</label>
+                                    <select class="form-select"
+                                            id="department"
+                                            th:field="*{department}">
+                                        <option value="">Select Department</option>
+                                        <option value="Manufacturing">Manufacturing</option>
+                                        <option value="Quality">Quality Control</option>
+                                        <option value="Maintenance">Maintenance</option>
+                                        <option value="Engineering">Engineering</option>
+                                        <option value="Production">Production</option>
+                                        <option value="Logistics">Logistics</option>
+                                        <option value="Admin">Administration</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Terms and Conditions -->
+                            <div class="mt-4">
+                                <div class="form-check">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           id="agreeTerms"
+                                           name="agreeTerms"
+                                           required>
+                                    <label class="form-check-label" for="agreeTerms">
+                                        I agree to the <a href="#" target="_blank">Terms of Service</a>
+                                        and <a href="#" target="_blank">Privacy Policy</a> *
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="d-grid mt-4">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    Register Account
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
 
@@ -80,225 +272,140 @@
     </div>
 </div>
 
-<!-- Main Content Fragment for HTMX -->
-<div th:fragment="main-content">
-    <!-- Messages Section -->
-    <div id="messages-section">
-        <!-- Success Message -->
-        <div th:if="${registrationSuccess == true}">
-            <div th:replace="~{fragments/registration-errors :: success-message}"></div>
-        </div>
-
-        <!-- Error Messages -->
-        <div th:if="${hasErrors == true}">
-            <!-- Validation Errors -->
-            <div th:if="${fieldErrors != null and !fieldErrors.isEmpty()}">
-                <div th:replace="~{fragments/registration-errors :: validation-errors}"></div>
-            </div>
-
-            <!-- Business/General Errors -->
-            <div th:if="${errorMessage != null and (fieldErrors == null or fieldErrors.isEmpty())}">
-                <div th:replace="~{fragments/registration-errors :: business-error}"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Registration Form -->
-    <div th:if="${registrationSuccess != true}">
-        <form th:action="@{/wireframes/register}"
-              method="post"
-              th:object="${userRegistration}"
-              hx-post="/wireframes/register"
-              hx-target="#main-content"
-              hx-indicator="#loading-indicator"
-              class="position-relative"
-              novalidate>
-
-            <!-- Loading Indicator -->
-            <div id="loading-indicator" class="htmx-indicator">
-                <div class="d-flex justify-content-center my-3">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Processing...</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Personal Information -->
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label for="firstName" class="form-label">First Name *</label>
-                    <input type="text"
-                           class="form-control"
-                           th:classappend="${fieldErrors != null and fieldErrors.containsKey('firstName')} ? 'is-invalid' : ''"
-                           id="firstName"
-                           th:field="*{firstName}"
-                           placeholder="Enter your first name"
-                           required>
-                    <div class="invalid-feedback" th:if="${fieldErrors != null and fieldErrors.containsKey('firstName')}"
-                         th:text="${fieldErrors.firstName}"></div>
-                </div>
-                <div class="col-md-6">
-                    <label for="lastName" class="form-label">Last Name *</label>
-                    <input type="text"
-                           class="form-control"
-                           th:classappend="${fieldErrors != null and fieldErrors.containsKey('lastName')} ? 'is-invalid' : ''"
-                           id="lastName"
-                           th:field="*{lastName}"
-                           placeholder="Enter your last name"
-                           required>
-                    <div class="invalid-feedback" th:if="${fieldErrors != null and fieldErrors.containsKey('lastName')}"
-                         th:text="${fieldErrors.lastName}"></div>
-                </div>
-            </div>
-
-            <!-- Email -->
-            <div class="mt-3">
-                <label for="email" class="form-label">Email Address *</label>
-                <input type="email"
-                       class="form-control"
-                       th:classappend="${fieldErrors != null and fieldErrors.containsKey('email')} ? 'is-invalid' : ''"
-                       id="email"
-                       th:field="*{email}"
-                       placeholder="name@company.com"
-                       hx-post="/wireframes/validate-email"
-                       hx-trigger="blur"
-                       hx-target="#email-feedback"
-                       hx-include="[name='email']"
-                       required>
-                <div id="email-feedback" class="validation-feedback">
-                    <div class="invalid-feedback" th:if="${fieldErrors != null and fieldErrors.containsKey('email')}"
-                         th:text="${fieldErrors.email}"></div>
-                </div>
-            </div>
-
-            <!-- Phone Number -->
-            <div class="mt-3">
-                <label for="phoneNumber" class="form-label">Phone Number *</label>
-                <input type="tel"
-                       class="form-control"
-                       th:classappend="${fieldErrors != null and fieldErrors.containsKey('phoneNumber')} ? 'is-invalid' : ''"
-                       id="phoneNumber"
-                       th:field="*{phoneNumber}"
-                       placeholder="+919876543210"
-                       hx-post="/wireframes/validate-phone"
-                       hx-trigger="blur"
-                       hx-target="#phone-feedback"
-                       hx-include="[name='phoneNumber']"
-                       required>
-                <div id="phone-feedback" class="validation-feedback">
-                    <div class="invalid-feedback" th:if="${fieldErrors != null and fieldErrors.containsKey('phoneNumber')}"
-                         th:text="${fieldErrors.phoneNumber}"></div>
-                </div>
-            </div>
-
-            <!-- Password -->
-            <div class="mt-3">
-                <label for="password" class="form-label">Password *</label>
-                <input type="password"
-                       class="form-control"
-                       th:classappend="${fieldErrors != null and fieldErrors.containsKey('password')} ? 'is-invalid' : ''"
-                       id="password"
-                       th:field="*{password}"
-                       placeholder="Enter a strong password"
-                       hx-post="/wireframes/check-password-strength"
-                       hx-trigger="keyup changed delay:300ms"
-                       hx-target="#password-feedback"
-                       hx-include="[name='password']"
-                       required>
-                <div id="password-feedback" class="validation-feedback">
-                    <div class="invalid-feedback" th:if="${fieldErrors != null and fieldErrors.containsKey('password')}"
-                         th:text="${fieldErrors.password}"></div>
-                </div>
-            </div>
-
-            <!-- Optional Fields -->
-            <div class="row g-3 mt-3">
-                <div class="col-md-6">
-                    <label for="employeeId" class="form-label">Employee ID</label>
-                    <input type="text"
-                           class="form-control"
-                           id="employeeId"
-                           th:field="*{employeeId}"
-                           placeholder="Employee ID (optional)">
-                </div>
-                <div class="col-md-6">
-                    <label for="department" class="form-label">Department</label>
-                    <select class="form-select"
-                            id="department"
-                            th:field="*{department}">
-                        <option value="">Select Department</option>
-                        <option value="Manufacturing">Manufacturing</option>
-                        <option value="Quality">Quality Control</option>
-                        <option value="Maintenance">Maintenance</option>
-                        <option value="Engineering">Engineering</option>
-                        <option value="Production">Production</option>
-                        <option value="Logistics">Logistics</option>
-                        <option value="Admin">Administration</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Terms and Conditions -->
-            <div class="mt-4">
-                <div class="form-check">
-                    <input class="form-check-input"
-                           type="checkbox"
-                           id="agreeTerms"
-                           name="agreeTerms"
-                           required>
-                    <label class="form-check-label" for="agreeTerms">
-                        I agree to the <a href="#" target="_blank">Terms of Service</a>
-                        and <a href="#" target="_blank">Privacy Policy</a> *
-                    </label>
-                </div>
-            </div>
-
-            <!-- Submit Button -->
-            <div class="d-grid mt-4">
-                <button type="submit" class="btn btn-primary btn-lg">
-                    <span class="htmx-indicator spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                    Register Account
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <!-- Custom JavaScript -->
 <script>
-    // Auto-format phone number
     document.addEventListener('DOMContentLoaded', function() {
-        function setupPhoneFormatting(inputId) {
-            const phoneInput = document.getElementById(inputId);
-            if (phoneInput) {
-                phoneInput.addEventListener('input', function(e) {
-                    let value = e.target.value.replace(/\D/g, '');
-                    if (value.startsWith('91') && value.length <= 12) {
-                        value = '+' + value;
-                    } else if (!value.startsWith('+') && value.length === 10) {
-                        value = '+91' + value;
-                    }
-                    e.target.value = value;
-                });
-            }
+        // Auto-format phone number
+        const phoneInput = document.getElementById('phoneNumber');
+        if (phoneInput) {
+            phoneInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.startsWith('91') && value.length <= 12) {
+                    value = '+' + value;
+                } else if (!value.startsWith('+') && value.length === 10) {
+                    value = '+91' + value;
+                }
+                e.target.value = value;
+            });
         }
 
-        setupPhoneFormatting('phoneNumber');
-    });
+        // Real-time validation
+        const emailInput = document.getElementById('email');
+        if (emailInput) {
+            emailInput.addEventListener('blur', function() {
+                validateEmail(this.value);
+            });
+        }
 
-    // Listen for HTMX events
-    document.body.addEventListener('htmx:afterSwap', function(evt) {
-        if (evt.detail.target.id === 'main-content') {
-            // Re-setup phone formatting after HTMX swap
-            const phoneInput = document.getElementById('phoneNumber');
-            if (phoneInput) {
-                setupPhoneFormatting('phoneNumber');
-            }
+        const phoneNumberInput = document.getElementById('phoneNumber');
+        if (phoneNumberInput) {
+            phoneNumberInput.addEventListener('blur', function() {
+                validatePhone(this.value);
+            });
+        }
+
+        const passwordInput = document.getElementById('password');
+        if (passwordInput) {
+            passwordInput.addEventListener('input', function() {
+                checkPasswordStrength(this.value);
+            });
         }
     });
+
+    function validateEmail(email) {
+        const feedback = document.getElementById('email-feedback');
+        if (!feedback) return;
+
+        if (!email || email.trim() === '') {
+            feedback.innerHTML = "<small class='text-danger'><i class='bi bi-x-circle me-1'></i>Email is required</small>";
+            return;
+        }
+
+        if (!email.match(/^[A-Za-z0-9+_.-]+@(.+)$/)) {
+            feedback.innerHTML = "<small class='text-danger'><i class='bi bi-x-circle me-1'></i>Please enter a valid email address</small>";
+            return;
+        }
+
+        feedback.innerHTML = "<small class='text-success'><i class='bi bi-check-circle me-1'></i>Email looks good</small>";
+    }
+
+    function validatePhone(phone) {
+        const feedback = document.getElementById('phone-feedback');
+        if (!feedback) return;
+
+        if (!phone || phone.trim() === '') {
+            feedback.innerHTML = "<small class='text-danger'><i class='bi bi-x-circle me-1'></i>Phone number is required</small>";
+            return;
+        }
+
+        if (!phone.match(/^\+?[1-9]\d{1,14}$/)) {
+            feedback.innerHTML = "<small class='text-danger'><i class='bi bi-x-circle me-1'></i>Please enter a valid phone number</small>";
+            return;
+        }
+
+        feedback.innerHTML = "<small class='text-success'><i class='bi bi-check-circle me-1'></i>Phone number looks good</small>";
+    }
+
+    function checkPasswordStrength(password) {
+        const feedback = document.getElementById('password-feedback');
+        if (!feedback) return;
+
+        if (!password || password === '') {
+            feedback.innerHTML = "<small class='text-muted'>Enter a password to see strength</small>";
+            return;
+        }
+
+        let score = 0;
+        if (password.length >= 8) score++;
+        if (password.match(/.*[a-z].*/)) score++;
+        if (password.match(/.*[A-Z].*/)) score++;
+        if (password.match(/.*\d.*/)) score++;
+        if (password.match(/.*[@$!%*?&].*/)) score++;
+
+        let colorClass, icon, message;
+
+        switch (score) {
+            case 0:
+            case 1:
+            case 2:
+                colorClass = 'text-danger';
+                icon = 'bi-shield-exclamation';
+                message = 'Weak - ' + getPasswordRequirements(password);
+                break;
+            case 3:
+            case 4:
+                colorClass = 'text-warning';
+                icon = 'bi-shield-check';
+                message = 'Good - ' + getPasswordRequirements(password);
+                break;
+            case 5:
+                colorClass = 'text-success';
+                icon = 'bi-shield-fill-check';
+                message = 'Strong password';
+                break;
+            default:
+                colorClass = 'text-muted';
+                icon = 'bi-shield';
+                message = 'Enter a password';
+        }
+
+        feedback.innerHTML = `<small class='${colorClass}'><i class='bi ${icon} me-1'></i>${message}</small>`;
+    }
+
+    function getPasswordRequirements(password) {
+        let requirements = [];
+
+        if (password.length < 8) requirements.push('8+ chars');
+        if (!password.match(/.*[a-z].*/)) requirements.push('lowercase');
+        if (!password.match(/.*[A-Z].*/)) requirements.push('uppercase');
+        if (!password.match(/.*\d.*/)) requirements.push('number');
+        if (!password.match(/.*[@$!%*?&].*/)) requirements.push('special char');
+
+        return requirements.length > 0 ? 'needs: ' + requirements.join(', ') : '';
+    }
 </script>
 </body>
 </html>
