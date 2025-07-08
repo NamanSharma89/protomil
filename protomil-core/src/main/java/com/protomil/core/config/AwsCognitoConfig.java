@@ -28,14 +28,14 @@ public class AwsCognitoConfig {
     }
 
     @Bean
-    public CognitoIdentityProviderClient cognitoClient(CognitoProperties properties) {
+    public CognitoIdentityProviderClient cognitoClient(CognitoProperties cognitoProperties) {
         AwsCredentialsProvider credentialsProvider = createCredentialsProvider();
 
         log.info("Initializing Cognito client for region: {} with credentials provider: {}",
-                properties.getRegion(), credentialsProvider.getClass().getSimpleName());
+                cognitoProperties.getRegion(), credentialsProvider.getClass().getSimpleName());
 
         return CognitoIdentityProviderClient.builder()
-                .region(Region.of(properties.getRegion()))
+                .region(Region.of(cognitoProperties.getRegion()))
                 .credentialsProvider(credentialsProvider)
                 .build();
     }
@@ -46,9 +46,7 @@ public class AwsCognitoConfig {
 
         if (isDevelopment && awsProfile != null && !awsProfile.isEmpty()) {
             log.info("Development environment detected. Using AWS profile: {}", awsProfile);
-
             try {
-                // Create a credentials chain that falls back gracefully
                 return AwsCredentialsProviderChain.of(
                         ProfileCredentialsProvider.create(awsProfile),
                         EnvironmentVariableCredentialsProvider.create(),
@@ -82,7 +80,6 @@ public class AwsCognitoConfig {
     }
 
     private String getAwsProfile() {
-        // Check multiple sources for AWS profile
         String profile = System.getenv("AWS_PROFILE");
         if (profile == null || profile.isEmpty()) {
             profile = System.getProperty("aws.profile");
@@ -100,7 +97,6 @@ public class AwsCognitoConfig {
                 return true;
             }
         }
-
         String springEnv = System.getenv("SPRING_PROFILES_ACTIVE");
         return springEnv != null && (springEnv.contains("dev") || springEnv.contains("local"));
     }

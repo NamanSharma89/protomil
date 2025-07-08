@@ -3,6 +3,7 @@ package com.protomil.core.user.wireframe.controller;
 import com.protomil.core.shared.exception.BusinessException;
 import com.protomil.core.user.dto.UserRegistrationRequest;
 import com.protomil.core.user.dto.UserRegistrationResponse;
+import com.protomil.core.user.service.EmailVerificationService;
 import com.protomil.core.user.service.UserRegistrationService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.HashMap;
 import java.util.List;
@@ -25,9 +28,13 @@ import java.util.Map;
 public class WireframeController {
 
     private final UserRegistrationService userRegistrationService;
+    private final EmailVerificationService emailVerificationService;
 
-    public WireframeController(UserRegistrationService userRegistrationService) {
+    public WireframeController(
+            UserRegistrationService userRegistrationService,
+            EmailVerificationService emailVerificationService) {
         this.userRegistrationService = userRegistrationService;
+        this.emailVerificationService = emailVerificationService;
     }
 
     @GetMapping("/")
@@ -48,7 +55,8 @@ public class WireframeController {
     public String processRegistration(
             @Valid @ModelAttribute("userRegistration") UserRegistrationRequest request,
             BindingResult bindingResult,
-            Model model) {
+            Model model,
+            RedirectAttributes redirectAttributes) {
 
         log.info("Processing registration request for email: {}", request.getEmail());
 
@@ -70,11 +78,20 @@ public class WireframeController {
             UserRegistrationResponse response = userRegistrationService.registerUser(request);
 
             // Success case
-            model.addAttribute("registrationSuccess", true);
-            model.addAttribute("userEmail", response.getEmail());
-            model.addAttribute("userId", response.getUserId());
-            model.addAttribute("emailVerificationRequired", response.getEmailVerificationRequired());
-            model.addAttribute("adminApprovalRequired", response.getAdminApprovalRequired());
+            if (response.getEmailVerificationRequired()) {
+                // Redirect to email verification page
+                redirectAttributes.addFlashAttribute("email", response.getEmail());
+                redirectAttributes.addFlashAttribute("message",
+                        "Registration successful! Please check your email for verification code.");
+                return "redirect:/wireframes/verify-email";
+            } else {
+                // Direct success without email verification
+                model.addAttribute("registrationSuccess", true);
+                model.addAttribute("userEmail", response.getEmail());
+                model.addAttribute("userId", response.getUserId());
+                model.addAttribute("emailVerificationRequired", false);
+                model.addAttribute("adminApprovalRequired", response.getAdminApprovalRequired());
+            }
 
             log.info("User registration successful for email: {}", response.getEmail());
             return "wireframes/register";
@@ -104,6 +121,78 @@ public class WireframeController {
             model.addAttribute("errorDetails", "If the problem persists, please contact support.");
 
             return "wireframes/register";
+        }
+    }
+
+    @GetMapping("/verify-email")
+    public String showEmailVerificationForm(@RequestParam(required = false) String email, Model model) {
+        model.addAttribute("email", email);
+        model.addAttribute("pageTitle", "Email Verification - Protomil");
+        return "wireframes/verify-email";
+    }
+
+    @PostMapping("/verify-email")
+    public String processEmailVerification(
+            @RequestParam String email,
+            @RequestParam String verificationCode,
+            Model model) {
+
+        log.info("Processing email verification for: {}", email);
+
+        try {
+            emailVerificationService.verifyEmail(email, verificationCode);
+
+            model.addAttribute("verificationSuccess", true);
+            model.addAttribute("email", email);
+            model.addAttribute("pageTitle", "Email Verified - Protomil");
+
+            log.info("Email verification successful for: {}", email);
+            return "wireframes/verify-email";
+
+        } catch (BusinessException e) {
+            log.error("Email verification failed for: {} - {}", email, e.getMessage());
+
+            model.addAttribute("hasErrors", true);
+            model.addAttribute("errorMessage", e.getMessage());
+            model.addAttribute("email", email);
+            model.addAttribute("pageTitle", "Email Verification - Protomil");
+
+            return "wireframes/verify-email";
+
+        } catch (Exception e) {
+            log.error("Unexpected error during email verification for: {}", email, e);
+
+            model.addAttribute("hasErrors", true);
+            model.addAttribute("errorMessage", "An unexpected error occurred. Please try again.");
+            model.addAttribute("email", email);
+            model.addAttribute("pageTitle", "Email Verification - Protomil");
+
+            return "wireframes/verify-email";
+        }
+    }
+
+    @PostMapping("/resend-verification")
+    public String resendVerificationCode(@RequestParam String email, Model model) {
+        log.info("Resending verification code for: {}", email);
+
+        try {
+            emailVerificationService.resendVerificationCode(email);
+
+            model.addAttribute("email", email);
+            model.addAttribute("message", "Verification code sent successfully! Please check your email.");
+            model.addAttribute("pageTitle", "Email Verification - Protomil");
+
+            return "wireframes/verify-email";
+
+        } catch (BusinessException e) {
+            log.error("Failed to resend verification code for: {} - {}", email, e.getMessage());
+
+            model.addAttribute("hasErrors", true);
+            model.addAttribute("errorMessage", e.getMessage());
+            model.addAttribute("email", email);
+            model.addAttribute("pageTitle", "Email Verification - Protomil");
+
+            return "wireframes/verify-email";
         }
     }
 

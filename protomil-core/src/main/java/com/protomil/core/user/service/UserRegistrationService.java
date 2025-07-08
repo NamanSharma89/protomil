@@ -1,4 +1,3 @@
-// Update src/main/java/com/protomil/core/user/service/UserRegistrationService.java
 package com.protomil.core.user.service;
 
 import com.protomil.core.config.CognitoProperties;
@@ -19,6 +18,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityPr
 import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,7 +46,7 @@ public class UserRegistrationService {
 
     @LogExecutionTime
     public UserRegistrationResponse registerUser(UserRegistrationRequest request) {
-        // Validation
+        // Check for existing users
         if (userRepository.existsByEmail(request.getEmail())) {
             log.warn("Registration attempt for existing email: {}", request.getEmail());
             throw new BusinessException("User with this email already exists");
@@ -69,11 +69,16 @@ public class UserRegistrationService {
                     .phoneNumber(request.getPhoneNumber())
                     .employeeId(request.getEmployeeId())
                     .department(request.getDepartment())
-                    .status(cognitoProperties.isEnabled() ? UserStatus.PENDING_VERIFICATION : UserStatus.ACTIVE)
+                    .status(determineInitialUserStatus())
                     .build();
 
             User savedUser = userRepository.save(user);
             log.info("User created with ID: {} and Cognito Sub: {}", savedUser.getId(), cognitoUserSub);
+
+            // Trigger email verification if Cognito is enabled
+            if (cognitoProperties.isEnabled() && cognitoProperties.getEmail().isVerificationRequired()) {
+                triggerEmailVerification(request.getEmail());
+            }
 
             eventPublisher.publishEvent(new UserRegisteredEvent(savedUser));
 
@@ -82,7 +87,8 @@ public class UserRegistrationService {
                     .email(savedUser.getEmail())
                     .status(savedUser.getStatus())
                     .registeredAt(savedUser.getCreatedAt())
-                    .emailVerificationRequired(cognitoProperties.isEnabled())
+                    .emailVerificationRequired(cognitoProperties.isEnabled() &&
+                            cognitoProperties.getEmail().isVerificationRequired())
                     .adminApprovalRequired(cognitoProperties.isEnabled())
                     .build();
 
@@ -109,30 +115,21 @@ public class UserRegistrationService {
         }
 
         try {
-            Map<String, String> attributes = new HashMap<>();
-            attributes.put("email", request.getEmail());
-            attributes.put("given_name", request.getFirstName());
-            attributes.put("family_name", request.getLastName());
-
-            if (request.getPhoneNumber() != null && !request.getPhoneNumber().trim().isEmpty()) {
-                String formattedPhone = formatPhoneNumber(request.getPhoneNumber());
-                attributes.put("phone_number", formattedPhone);
-            }
+            Map<String, String> attributes = buildUserAttributes(request);
 
             AdminCreateUserRequest cognitoRequest = AdminCreateUserRequest.builder()
                     .userPoolId(cognitoProperties.getUserPoolId())
                     .username(request.getEmail())
-                    .userAttributes(
-                            attributes.entrySet().stream()
-                                    .map(entry -> AttributeType.builder()
-                                            .name(entry.getKey())
-                                            .value(entry.getValue())
-                                            .build())
-                                    .toList()
-                    )
+                    .userAttributes(attributes.entrySet().stream()
+                            .map(entry -> AttributeType.builder()
+                                    .name(entry.getKey())
+                                    .value(entry.getValue())
+                                    .build())
+                            .toList())
                     .temporaryPassword(request.getPassword())
-                    .messageAction(MessageActionType.SUPPRESS) // Don't send welcome email for dev
+                    .messageAction(MessageActionType.SUPPRESS) // We'll handle email verification separately
                     .forceAliasCreation(false)
+                    .desiredDeliveryMediums(DeliveryMediumType.EMAIL)
                     .build();
 
             log.debug("Creating Cognito user for email: {}", request.getEmail());
@@ -153,16 +150,80 @@ public class UserRegistrationService {
                     request.getEmail(), e.awsErrorDetails().errorMessage(), e);
 
             String errorCode = e.awsErrorDetails().errorCode();
-            String errorMessage = switch (errorCode) {
-                case "UsernameExistsException" -> "User with this email already exists in the system";
-                case "InvalidPasswordException" -> "Password does not meet security requirements";
-                case "InvalidParameterException" -> "Invalid user information provided";
-                case "UserPoolTaggingException" -> "User pool configuration error";
-                default -> "User registration failed: " + e.awsErrorDetails().errorMessage();
-            };
-
+            String errorMessage = mapCognitoError(errorCode, e);
             throw new ExternalServiceException(errorMessage, "AWS Cognito", e);
         }
+    }
+
+    private void triggerEmailVerification(String email) {
+        if (!cognitoProperties.isEnabled() || cognitoClient.isEmpty()) {
+            log.info("Cognito disabled - skipping email verification trigger for: {}", email);
+            return;
+        }
+
+        try {
+            AdminInitiateAuthRequest authRequest = AdminInitiateAuthRequest.builder()
+                    .userPoolId(cognitoProperties.getUserPoolId())
+                    .clientId(cognitoProperties.getClientId())
+                    .authFlow(AuthFlowType.ADMIN_NO_SRP_AUTH)
+                    .authParameters(Map.of("USERNAME", email))
+                    .build();
+
+            // This will trigger the email verification flow
+            log.info("Triggering email verification for user: {}", email);
+
+            // Alternative approach: Use ResendConfirmationCode
+            ResendConfirmationCodeRequest resendRequest = ResendConfirmationCodeRequest.builder()
+                    .clientId(cognitoProperties.getClientId())
+                    .username(email)
+                    .build();
+
+            cognitoClient.get().resendConfirmationCode(resendRequest);
+            log.info("Email verification code sent to: {}", email);
+
+        } catch (CognitoIdentityProviderException e) {
+            log.error("Failed to trigger email verification for: {} - Error: {}",
+                    email, e.awsErrorDetails().errorMessage(), e);
+            // Don't throw exception here - user is already created, this is just verification
+        } catch (Exception e) {
+            log.error("Unexpected error triggering email verification for: {}", email, e);
+        }
+    }
+
+    private Map<String, String> buildUserAttributes(UserRegistrationRequest request) {
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("email", request.getEmail());
+        attributes.put("email_verified", "false"); // Will be verified via email
+        attributes.put("given_name", request.getFirstName());
+        attributes.put("family_name", request.getLastName());
+
+        if (request.getPhoneNumber() != null && !request.getPhoneNumber().trim().isEmpty()) {
+            String formattedPhone = formatPhoneNumber(request.getPhoneNumber());
+            attributes.put("phone_number", formattedPhone);
+            attributes.put("phone_number_verified", "false");
+        }
+
+        // Custom attributes for Protomil
+        if (request.getEmployeeId() != null) {
+            attributes.put("custom:employee_id", request.getEmployeeId());
+        }
+        if (request.getDepartment() != null) {
+            attributes.put("custom:department", request.getDepartment());
+        }
+
+        return attributes;
+    }
+
+    private UserStatus determineInitialUserStatus() {
+        if (!cognitoProperties.isEnabled()) {
+            return UserStatus.ACTIVE; // Skip verification in dev mode
+        }
+
+        if (cognitoProperties.getEmail().isVerificationRequired()) {
+            return UserStatus.PENDING_VERIFICATION;
+        }
+
+        return UserStatus.PENDING_APPROVAL;
     }
 
     private String formatPhoneNumber(String phoneNumber) {
@@ -179,5 +240,24 @@ public class UserRegistrationService {
         }
 
         return cleaned;
+    }
+
+    private String mapCognitoError(String errorCode, CognitoIdentityProviderException e) {
+        return switch (errorCode) {
+            case "UsernameExistsException" ->
+                    "User with this email already exists in the system";
+            case "InvalidPasswordException" ->
+                    "Password does not meet security requirements";
+            case "InvalidParameterException" ->
+                    "Invalid user information provided";
+            case "UserPoolTaggingException" ->
+                    "User pool configuration error";
+            case "CodeDeliveryFailureException" ->
+                    "Failed to send verification email. Please check your email address.";
+            case "InvalidEmailRoleAccessPolicyException" ->
+                    "Email service configuration error. Please contact support.";
+            default ->
+                    "User registration failed: " + e.awsErrorDetails().errorMessage();
+        };
     }
 }

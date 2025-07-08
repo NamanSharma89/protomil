@@ -22,6 +22,7 @@ spring:
   mvc:
     favicon:
       enabled: false
+
 aws:
   profile: ${AWS_PROFILE:protomil-dev}
   region: ${AWS_REGION:ap-south-1}
@@ -34,6 +35,12 @@ aws:
       - ALLOW_ADMIN_USER_PASSWORD_AUTH
       - ALLOW_USER_PASSWORD_AUTH
       - ALLOW_REFRESH_TOKEN_AUTH
+    email:
+      verificationRequired: true
+      fromEmail: ${AWS_COGNITO_FROM_EMAIL:noreply@protomil.com}
+      replyToEmail: ${AWS_COGNITO_REPLY_TO_EMAIL:support@protomil.com}
+      verificationSubject: "Verify your Protomil account"
+      verificationMessage: "Your verification code is {####}"
 
 management:
   endpoints:
@@ -53,7 +60,6 @@ logging:
     software.amazon.awssdk.services.sso: INFO
     io.github.wimdeblauwe.htmx: DEBUG # Enable HTMX logging
 
-# HTMX Configuration
 htmx:
   enabled: true
   use-htmx-response-headers: true
