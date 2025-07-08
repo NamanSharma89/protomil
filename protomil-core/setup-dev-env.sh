@@ -3,8 +3,8 @@
 
 export AWS_PROFILE=protomil-dev
 export AWS_REGION=ap-south-1
-export AWS_COGNITO_DEV_USER_POOL_ID=ap-south-1_VkXOLuiOO
-export AWS_COGNITO_DEV_CLIENT_ID=5ton3io9ag01b2b1fcm9ntutif
+export AWS_COGNITO_DEV_USER_POOL_ID=ap-south-1_ux5xRsQe0
+export AWS_COGNITO_DEV_CLIENT_ID=54ipt10tc4t8d37l6ukbcanrlt
 
 echo "Development environment variables set for protomil-dev profile"
 echo "AWS Profile: $AWS_PROFILE"

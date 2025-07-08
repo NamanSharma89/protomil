@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.SignUpRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.SignUpResponse;
 
 import java.util.HashMap;
 import java.util.List;
@@ -77,7 +79,7 @@ public class UserRegistrationService {
 
             // Trigger email verification if Cognito is enabled
             if (cognitoProperties.isEnabled() && cognitoProperties.getEmail().isVerificationRequired()) {
-                triggerEmailVerification(request.getEmail());
+                // triggerEmailVerification(request.getEmail());
             }
 
             eventPublisher.publishEvent(new UserRegisteredEvent(savedUser));
@@ -115,44 +117,68 @@ public class UserRegistrationService {
         }
 
         try {
+            // Use SignUp instead of AdminCreateUser for proper email verification flow
             Map<String, String> attributes = buildUserAttributes(request);
 
-            AdminCreateUserRequest cognitoRequest = AdminCreateUserRequest.builder()
-                    .userPoolId(cognitoProperties.getUserPoolId())
+            SignUpRequest signUpRequest = SignUpRequest.builder()
+                    .clientId(cognitoProperties.getClientId())
                     .username(request.getEmail())
+                    .password(request.getPassword())
                     .userAttributes(attributes.entrySet().stream()
                             .map(entry -> AttributeType.builder()
                                     .name(entry.getKey())
                                     .value(entry.getValue())
                                     .build())
                             .toList())
-                    .temporaryPassword(request.getPassword())
-                    .messageAction(MessageActionType.SUPPRESS) // We'll handle email verification separately
-                    .forceAliasCreation(false)
-                    .desiredDeliveryMediums(DeliveryMediumType.EMAIL)
                     .build();
 
-            log.debug("Creating Cognito user for email: {}", request.getEmail());
-            AdminCreateUserResponse response = cognitoClient.get().adminCreateUser(cognitoRequest);
+            log.info("Creating Cognito user via SignUp for email: {}", request.getEmail());
 
-            String userSub = response.user().attributes().stream()
-                    .filter(attr -> "sub".equals(attr.name()))
-                    .findFirst()
-                    .map(AttributeType::value)
-                    .orElseThrow(() -> new ExternalServiceException(
-                            "Failed to get Cognito user sub from response", "AWS Cognito"));
+            SignUpResponse response = cognitoClient.get().signUp(signUpRequest);
 
-            log.info("Successfully created Cognito user with sub: {} for email: {}", userSub, request.getEmail());
-            return userSub;
+            log.info("SignUp successful. User Sub: {}, Confirmation required: {}",
+                    response.userSub(), !response.userConfirmed());
+
+            // Check if email was sent
+            if (response.codeDeliveryDetails() != null) {
+                log.info("Verification code delivery details - Medium: {}, Destination: {}",
+                        response.codeDeliveryDetails().deliveryMedium(),
+                        response.codeDeliveryDetails().destination());
+            } else {
+                log.warn("No code delivery details returned - email may not have been sent");
+            }
+
+            return response.userSub();
 
         } catch (CognitoIdentityProviderException e) {
-            log.error("Cognito service error for email: {} - Error: {}",
-                    request.getEmail(), e.awsErrorDetails().errorMessage(), e);
+            log.error("Cognito SignUp error for email: {} - Error Code: {}, Error Message: {}",
+                    request.getEmail(), e.awsErrorDetails().errorCode(), e.awsErrorDetails().errorMessage(), e);
 
-            String errorCode = e.awsErrorDetails().errorCode();
-            String errorMessage = mapCognitoError(errorCode, e);
+            String errorMessage = mapCognitoError(e.awsErrorDetails().errorCode(), e);
             throw new ExternalServiceException(errorMessage, "AWS Cognito", e);
         }
+    }
+
+    private Map<String, String> buildUserAttributes(UserRegistrationRequest request) {
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("email", request.getEmail());
+        attributes.put("given_name", request.getFirstName());
+        attributes.put("family_name", request.getLastName());
+
+        if (request.getPhoneNumber() != null && !request.getPhoneNumber().trim().isEmpty()) {
+            String formattedPhone = formatPhoneNumber(request.getPhoneNumber());
+            attributes.put("phone_number", formattedPhone);
+        }
+
+        // Custom attributes for Protomil
+        if (request.getEmployeeId() != null) {
+            attributes.put("custom:employee_id", request.getEmployeeId());
+        }
+        if (request.getDepartment() != null) {
+            attributes.put("custom:department", request.getDepartment());
+        }
+
+        return attributes;
     }
 
     private void triggerEmailVerification(String email) {
@@ -188,30 +214,6 @@ public class UserRegistrationService {
         } catch (Exception e) {
             log.error("Unexpected error triggering email verification for: {}", email, e);
         }
-    }
-
-    private Map<String, String> buildUserAttributes(UserRegistrationRequest request) {
-        Map<String, String> attributes = new HashMap<>();
-        attributes.put("email", request.getEmail());
-        attributes.put("email_verified", "false"); // Will be verified via email
-        attributes.put("given_name", request.getFirstName());
-        attributes.put("family_name", request.getLastName());
-
-        if (request.getPhoneNumber() != null && !request.getPhoneNumber().trim().isEmpty()) {
-            String formattedPhone = formatPhoneNumber(request.getPhoneNumber());
-            attributes.put("phone_number", formattedPhone);
-            attributes.put("phone_number_verified", "false");
-        }
-
-        // Custom attributes for Protomil
-        if (request.getEmployeeId() != null) {
-            attributes.put("custom:employee_id", request.getEmployeeId());
-        }
-        if (request.getDepartment() != null) {
-            attributes.put("custom:department", request.getDepartment());
-        }
-
-        return attributes;
     }
 
     private UserStatus determineInitialUserStatus() {
