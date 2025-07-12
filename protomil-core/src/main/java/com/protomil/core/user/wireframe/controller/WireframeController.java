@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -60,16 +61,13 @@ public class WireframeController {
 
         log.info("Processing registration request for email: {}", request.getEmail());
 
-        // Initialize model with form data
         initializeFormModel(model, request);
         model.addAttribute("pageTitle", "User Registration - Protomil");
 
-        // Handle validation errors
         if (bindingResult.hasErrors()) {
             Map<String, String> fieldErrors = extractFieldErrors(bindingResult);
             model.addAttribute("fieldErrors", fieldErrors);
             model.addAttribute("hasErrors", true);
-
             log.debug("Validation errors: {}", fieldErrors);
             return "wireframes/register";
         }
@@ -77,15 +75,15 @@ public class WireframeController {
         try {
             UserRegistrationResponse response = userRegistrationService.registerUser(request);
 
-            // Success case
             if (response.getEmailVerificationRequired()) {
-                // Redirect to email verification page
-                redirectAttributes.addFlashAttribute("email", response.getEmail());
+                // Use redirect (not forward) to go to GET handler of verify-email
+                redirectAttributes.addAttribute("email", response.getEmail());
                 redirectAttributes.addFlashAttribute("message",
                         "Registration successful! Please check your email for verification code.");
+
+                log.info("Redirecting to email verification for: {}", response.getEmail());
                 return "redirect:/wireframes/verify-email";
             } else {
-                // Direct success without email verification
                 model.addAttribute("registrationSuccess", true);
                 model.addAttribute("userEmail", response.getEmail());
                 model.addAttribute("userId", response.getUserId());
@@ -98,11 +96,9 @@ public class WireframeController {
 
         } catch (BusinessException e) {
             log.error("Business error during registration: {}", e.getMessage());
-
             model.addAttribute("hasErrors", true);
             model.addAttribute("errorMessage", e.getMessage());
 
-            // Add suggestions based on error type
             if (e.getMessage().contains("already exists")) {
                 model.addAttribute("suggestions", List.of(
                         "Try logging in if you already have an account",
@@ -110,22 +106,32 @@ public class WireframeController {
                         "Contact support if you believe this is an error"
                 ));
             }
-
             return "wireframes/register";
 
         } catch (Exception e) {
             log.error("Unexpected error during registration", e);
-
             model.addAttribute("hasErrors", true);
             model.addAttribute("errorMessage", "An unexpected error occurred. Please try again.");
             model.addAttribute("errorDetails", "If the problem persists, please contact support.");
-
             return "wireframes/register";
         }
     }
 
     @GetMapping("/verify-email")
-    public String showEmailVerificationForm(@RequestParam(required = false) String email, Model model) {
+    public String showEmailVerificationForm(
+            @RequestParam(required = false) String email,
+            Model model) {
+
+        log.debug("Showing email verification form for email: {}", email);
+
+        if (!StringUtils.hasText(email)) {
+            log.warn("Email verification page accessed without email parameter");
+            model.addAttribute("hasErrors", true);
+            model.addAttribute("errorMessage", "Email parameter is missing. Please start the registration process again.");
+            model.addAttribute("pageTitle", "Email Verification - Protomil");
+            return "wireframes/verify-email";
+        }
+
         model.addAttribute("email", email);
         model.addAttribute("pageTitle", "Email Verification - Protomil");
         return "wireframes/verify-email";
@@ -133,11 +139,29 @@ public class WireframeController {
 
     @PostMapping("/verify-email")
     public String processEmailVerification(
-            @RequestParam String email,
-            @RequestParam String verificationCode,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String verificationCode,
             Model model) {
 
         log.info("Processing email verification for: {}", email);
+
+        // Validate input parameters
+        if (!StringUtils.hasText(email)) {
+            log.error("Email verification attempted with empty email");
+            model.addAttribute("hasErrors", true);
+            model.addAttribute("errorMessage", "Email is required for verification");
+            model.addAttribute("pageTitle", "Email Verification - Protomil");
+            return "wireframes/verify-email";
+        }
+
+        if (!StringUtils.hasText(verificationCode)) {
+            log.error("Email verification attempted with empty verification code for email: {}", email);
+            model.addAttribute("hasErrors", true);
+            model.addAttribute("errorMessage", "Verification code is required");
+            model.addAttribute("email", email);
+            model.addAttribute("pageTitle", "Email Verification - Protomil");
+            return "wireframes/verify-email";
+        }
 
         try {
             emailVerificationService.verifyEmail(email, verificationCode);
@@ -151,29 +175,36 @@ public class WireframeController {
 
         } catch (BusinessException e) {
             log.error("Email verification failed for: {} - {}", email, e.getMessage());
-
             model.addAttribute("hasErrors", true);
             model.addAttribute("errorMessage", e.getMessage());
             model.addAttribute("email", email);
             model.addAttribute("pageTitle", "Email Verification - Protomil");
-
             return "wireframes/verify-email";
 
         } catch (Exception e) {
             log.error("Unexpected error during email verification for: {}", email, e);
-
             model.addAttribute("hasErrors", true);
             model.addAttribute("errorMessage", "An unexpected error occurred. Please try again.");
             model.addAttribute("email", email);
             model.addAttribute("pageTitle", "Email Verification - Protomil");
-
             return "wireframes/verify-email";
         }
     }
 
     @PostMapping("/resend-verification")
-    public String resendVerificationCode(@RequestParam String email, Model model) {
+    public String resendVerificationCode(
+            @RequestParam(required = false) String email,
+            Model model) {
+
         log.info("Resending verification code for: {}", email);
+
+        if (!StringUtils.hasText(email)) {
+            log.error("Resend verification attempted with empty email");
+            model.addAttribute("hasErrors", true);
+            model.addAttribute("errorMessage", "Email is required");
+            model.addAttribute("pageTitle", "Email Verification - Protomil");
+            return "wireframes/verify-email";
+        }
 
         try {
             emailVerificationService.resendVerificationCode(email);
@@ -182,21 +213,19 @@ public class WireframeController {
             model.addAttribute("message", "Verification code sent successfully! Please check your email.");
             model.addAttribute("pageTitle", "Email Verification - Protomil");
 
+            log.info("Verification code resent successfully for: {}", email);
             return "wireframes/verify-email";
 
         } catch (BusinessException e) {
             log.error("Failed to resend verification code for: {} - {}", email, e.getMessage());
-
             model.addAttribute("hasErrors", true);
             model.addAttribute("errorMessage", e.getMessage());
             model.addAttribute("email", email);
             model.addAttribute("pageTitle", "Email Verification - Protomil");
-
             return "wireframes/verify-email";
         }
     }
 
-    // Helper methods
     private void initializeFormModel(Model model, UserRegistrationRequest request) {
         model.addAttribute("userRegistration", request);
         model.addAttribute("registrationSuccess", false);
