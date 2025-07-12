@@ -1,0 +1,18 @@
+flowchart TD
+    A[Login Attempt] --> B{Cognito Auth}
+
+    B -->|Success| C[Check Local DB Status]
+    B -->|Fail| D[Log Specific Error]
+    D --> E[Show Generic Message]
+    E --> F[Apply Rate Limiting]
+
+    C --> G{User Status}
+    G -->|ACTIVE| H[Proceed with Login]
+    G -->|PENDING_APPROVAL| I[Show Pending Message]
+    G -->|SUSPENDED| J[Show Suspended Message]
+    G -->|DELETED| K[Show Contact Support]
+
+    H --> L[Success Flow]
+    I --> M[End Session]
+    J --> M
+    K --> M

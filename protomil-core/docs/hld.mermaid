@@ -1,0 +1,46 @@
+graph TB
+    subgraph "Client Layer"
+        UI[Wireframe UI]
+        Login[Login Page]
+        Dashboard[Dashboard]
+    end
+
+    subgraph "Application Layer"
+        AuthController[Auth Controller]
+        AuthService[Authentication Service]
+        RoleService[Role Service]
+        SessionManager[Session Manager]
+    end
+
+    subgraph "Security Layer"
+        JWTManager[JWT Manager]
+        CSRFProtection[CSRF Protection]
+        RateLimiter[Rate Limiter]
+    end
+
+    subgraph "External Services"
+        Cognito[AWS Cognito]
+        Redis[Redis Cache<br/>Future]
+    end
+
+    subgraph "Data Layer"
+        UserDB[(User Database)]
+        RoleDB[(Role Database)]
+        SessionCache[Session Map<br/>In-Memory]
+    end
+
+    UI --> Login
+    Login --> AuthController
+    AuthController --> AuthService
+    AuthService --> Cognito
+    AuthService --> UserDB
+    AuthService --> RoleService
+    RoleService --> RoleDB
+    AuthService --> JWTManager
+    JWTManager --> SessionManager
+    SessionManager --> SessionCache
+    SessionManager -.-> Redis
+    AuthController --> Dashboard
+
+    CSRFProtection --> AuthController
+    RateLimiter --> AuthController

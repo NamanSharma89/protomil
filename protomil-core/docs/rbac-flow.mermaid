@@ -1,0 +1,20 @@
+flowchart TD
+    A[User Accesses Dashboard] --> B[Extract JWT from Cookie]
+    B --> C[Validate Token]
+    C --> D{Token Valid?}
+
+    D -->|No| E[Redirect to Login]
+    D -->|Yes| F[Extract User Roles]
+
+    F --> G[Generate Navigation Menu]
+    G --> H{User Role?}
+
+    H -->|ADMIN| I[Show All Menu Items]
+    H -->|SUPERVISOR| J[Show Department Management]
+    H -->|TECHNICIAN| K[Show Job Cards]
+    H -->|PENDING_USER| L[Show Only Profile]
+
+    I --> M[Render Dashboard]
+    J --> M
+    K --> M
+    L --> M

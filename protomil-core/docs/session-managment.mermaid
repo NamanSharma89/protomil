@@ -1,0 +1,22 @@
+graph LR
+    subgraph "Session Lifecycle"
+        A[Login] --> B[Generate Access Token<br/>30 min]
+        B --> C[Generate Refresh Token<br/>2 hours]
+        C --> D[Store in Session Cache]
+
+        D --> E{Token Expired?}
+        E -->|Access Token| F[Auto Refresh]
+        E -->|Refresh Token| G[Force Re-login]
+
+        F --> D
+        G --> A
+    end
+
+    subgraph "Storage Strategy"
+        H[HttpOnly Cookie] --> I[JWT Access Token]
+        J[Session Cache Map] --> K[User Metadata]
+        J --> L[Permissions Cache]
+        J --> M[Session State]
+
+        N[Future: Redis] -.-> J
+    end

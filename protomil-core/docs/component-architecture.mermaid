@@ -1,0 +1,39 @@
+classDiagram
+    class AuthController {
+        +showLoginPage()
+        +processLogin(credentials)
+        +logout()
+        +dashboard()
+    }
+
+    class AuthenticationService {
+        +authenticateUser(email, password)
+        +validateUserStatus(user)
+        +refreshToken(refreshToken)
+        +logout(userId)
+    }
+
+    class JWTManager {
+        +generateToken(claims)
+        +validateToken(token)
+        +refreshToken(refreshToken)
+        +extractClaims(token)
+    }
+
+    class SessionManager {
+        +createSession(userId, token)
+        +getSession(sessionId)
+        +invalidateSession(sessionId)
+        +cleanupExpiredSessions()
+    }
+
+    class RoleService {
+        +getUserRoles(userId)
+        +hasPermission(userId, resource, action)
+        +getRoleHierarchy()
+    }
+
+    AuthController --> AuthenticationService
+    AuthenticationService --> JWTManager
+    AuthenticationService --> SessionManager
+    AuthenticationService --> RoleService
