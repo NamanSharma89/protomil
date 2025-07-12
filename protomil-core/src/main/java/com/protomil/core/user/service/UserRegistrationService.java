@@ -170,13 +170,23 @@ public class UserRegistrationService {
             attributes.put("phone_number", formattedPhone);
         }
 
-        // Custom attributes for Protomil
+        // Custom attributes with proper prefix
         if (request.getEmployeeId() != null) {
             attributes.put("custom:employee_id", request.getEmployeeId());
         }
+
         if (request.getDepartment() != null) {
             attributes.put("custom:department", request.getDepartment());
         }
+
+        // Set initial status
+        attributes.put("custom:approval_status", UserStatus.PENDING_VERIFICATION.name());
+
+        // Placeholder for local user ID (will be updated after user creation)
+        attributes.put("custom:local_user_id", "");
+
+        // Initial empty roles
+        attributes.put("custom:user_roles", "");
 
         return attributes;
     }

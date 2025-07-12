@@ -63,3 +63,12 @@ logging:
 htmx:
   enabled: true
   use-htmx-response-headers: true
+
+protomil:
+  ui:
+    login:
+      company-logo: ${COMPANY_LOGO_URL:}
+      company-name: ${COMPANY_NAME:Protomil}
+      company-tagline: ${COMPANY_TAGLINE:Manufacturing Execution System}
+      enable-remember-me: ${ENABLE_REMEMBER_ME:true}
+      enable-forgot-password: ${ENABLE_FORGOT_PASSWORD:true}

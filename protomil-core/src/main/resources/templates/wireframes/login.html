@@ -1,0 +1,341 @@
+<!-- src/main/resources/templates/wireframes/login.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle ?: 'Login - Protomil'}">Login - Protomil</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+    <style>
+        .protomil-brand {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .login-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        .login-card {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .login-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .company-logo {
+            max-height: 60px;
+            max-width: 200px;
+            margin-bottom: 1rem;
+        }
+
+        .login-body {
+            padding: 2.5rem;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px 30px;
+            font-weight: 500;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+            transform: translateY(-1px);
+        }
+
+        .password-toggle {
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        .password-toggle:hover {
+            color: #667eea;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 1.5rem 0;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #dee2e6;
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 1rem;
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+
+        .login-footer {
+            background: #f8f9fa;
+            padding: 1.5rem 2.5rem;
+            text-align: center;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+        }
+    </style>
+</head>
+<body>
+<div class="login-container d-flex align-items-center justify-content-center">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-5 col-md-7 col-sm-9">
+                <div class="card login-card">
+                    <!-- Login Header with Logo -->
+                    <div class="login-header">
+                        <!-- Company Logo Placeholder - Easy to customize -->
+                        <div th:if="${companyLogo}" class="mb-3">
+                            <img th:src="${companyLogo}"
+                                 alt="Company Logo"
+                                 class="company-logo">
+                        </div>
+
+                        <!-- Default Protomil Branding -->
+                        <div th:unless="${companyLogo}">
+                            <h2 class="mb-1">
+                                <i class="bi bi-gear-fill me-2"></i>
+                                Protomil
+                            </h2>
+                            <p class="mb-0 opacity-75">Manufacturing Execution System</p>
+                        </div>
+                    </div>
+
+                    <!-- Login Form -->
+                    <div class="login-body">
+                        <!-- Success Messages -->
+                        <div th:if="${message}"
+                             class="alert alert-success alert-dismissible fade show"
+                             role="alert">
+                            <i class="bi bi-check-circle-fill me-2"></i>
+                            <span th:text="${message}">Success message</span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+
+                        <!-- Error Messages -->
+                        <div th:if="${error}"
+                             class="alert alert-danger alert-dismissible fade show"
+                             role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <span th:text="${error}">Error message</span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+
+                        <!-- Login Form -->
+                        <form th:action="@{/wireframes/login}"
+                              method="post"
+                              th:object="${loginRequest}"
+                              id="loginForm"
+                              novalidate>
+
+                            <!-- Email Field -->
+                            <div class="mb-3">
+                                <label for="email" class="form-label fw-medium">
+                                    <i class="bi bi-envelope me-1"></i>
+                                    Email Address
+                                </label>
+                                <input type="email"
+                                       class="form-control form-control-lg"
+                                       th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''"
+                                       id="email"
+                                       th:field="*{email}"
+                                       placeholder="Enter your email address"
+                                       required
+                                       autocomplete="email">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}"
+                                     th:errors="*{email}"></div>
+                            </div>
+
+                            <!-- Password Field -->
+                            <div class="mb-3">
+                                <label for="password" class="form-label fw-medium">
+                                    <i class="bi bi-lock me-1"></i>
+                                    Password
+                                </label>
+                                <div class="input-group">
+                                    <input type="password"
+                                           class="form-control form-control-lg"
+                                           th:classappend="${#fields.hasErrors('password')} ? 'is-invalid' : ''"
+                                           id="password"
+                                           th:field="*{password}"
+                                           placeholder="Enter your password"
+                                           required
+                                           autocomplete="current-password">
+                                    <button class="btn btn-outline-secondary password-toggle"
+                                            type="button"
+                                            onclick="togglePassword()">
+                                        <i class="bi bi-eye" id="toggleIcon"></i>
+                                    </button>
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('password')}"
+                                         th:errors="*{password}"></div>
+                                </div>
+                            </div>
+
+                            <!-- Remember Me & Forgot Password -->
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <div class="form-check">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           id="rememberMe"
+                                           th:field="*{rememberMe}">
+                                    <label class="form-check-label" for="rememberMe">
+                                        Remember me
+                                    </label>
+                                </div>
+                                <a href="/wireframes/forgot-password"
+                                   class="text-decoration-none">
+                                    Forgot password?
+                                </a>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="d-grid">
+                                <button type="submit"
+                                        class="btn btn-primary btn-lg"
+                                        id="loginButton">
+                                        <span class="spinner-border spinner-border-sm me-2 d-none"
+                                              id="loginSpinner"></span>
+                                    <i class="bi bi-box-arrow-in-right me-2" id="loginIcon"></i>
+                                    <span id="loginText">Sign In</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Login Footer -->
+                    <div class="login-footer">
+                        <p class="mb-0 text-muted">
+                            Don't have an account?
+                            <a href="/wireframes/register" class="text-decoration-none fw-medium">
+                                Create one here
+                            </a>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Back to Home -->
+                <div class="text-center mt-4">
+                    <a href="/wireframes/" class="text-muted text-decoration-none">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Custom JavaScript -->
+<script>
+    // Password visibility toggle
+    function togglePassword() {
+        const passwordField = document.getElementById('password');
+        const toggleIcon = document.getElementById('toggleIcon');
+
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            toggleIcon.className = 'bi bi-eye-slash';
+        } else {
+            passwordField.type = 'password';
+            toggleIcon.className = 'bi bi-eye';
+        }
+    }
+
+    // Form submission handling
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        const submitButton = document.getElementById('loginButton');
+        const spinner = document.getElementById('loginSpinner');
+        const icon = document.getElementById('loginIcon');
+        const text = document.getElementById('loginText');
+
+        // Show loading state
+        submitButton.disabled = true;
+        spinner.classList.remove('d-none');
+        icon.classList.add('d-none');
+        text.textContent = 'Signing In...';
+    });
+
+    // Auto-focus email field
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('email').focus();
+    });
+
+    // Real-time validation feedback
+    const emailField = document.getElementById('email');
+    const passwordField = document.getElementById('password');
+
+    emailField.addEventListener('blur', function() {
+        validateEmail(this);
+    });
+
+    passwordField.addEventListener('input', function() {
+        validatePassword(this);
+    });
+
+    function validateEmail(field) {
+        const email = field.value.trim();
+        if (email && !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+            field.classList.add('is-invalid');
+            field.classList.remove('is-valid');
+        } else if (email) {
+            field.classList.remove('is-invalid');
+            field.classList.add('is-valid');
+        } else {
+            field.classList.remove('is-invalid', 'is-valid');
+        }
+    }
+
+    function validatePassword(field) {
+        const password = field.value;
+        if (password && password.length < 8) {
+            field.classList.add('is-invalid');
+            field.classList.remove('is-valid');
+        } else if (password) {
+            field.classList.remove('is-invalid');
+            field.classList.add('is-valid');
+        } else {
+            field.classList.remove('is-invalid', 'is-valid');
+        }
+    }
+</script>
+</body>
+</html>
