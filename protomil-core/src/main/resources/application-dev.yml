@@ -25,6 +25,11 @@ spring:
   task:
     scheduling:
       enabled: true
+    execution:
+      pool:
+        core-size: 2
+        max-size: 4
+        queue-capacity: 100
 
 aws:
   profile: ${AWS_PROFILE:protomil-dev}
@@ -86,3 +91,15 @@ protomil:
       company-tagline: ${COMPANY_TAGLINE:Manufacturing Execution System}
       enable-remember-me: true
       enable-forgot-password: true
+  user-status:
+    sync:
+      enabled: true  # Enable scheduled sync jobs
+      validation-interval: 3600000  # 1 hour in milliseconds
+      sync-interval: 86400000       # 24 hours in milliseconds
+      pending-check-interval: 1800000  # 30 minutes in milliseconds
+      max-pending-days: 7           # Alert after 7 days in pending status
+    cognito:
+      sync-on-login: true          # Validate status consistency on every login
+      sync-on-status-change: true  # Auto-sync when status changes locally
+      retry-attempts: 3            # Number of retry attempts for failed syncs
+      retry-delay: 5000

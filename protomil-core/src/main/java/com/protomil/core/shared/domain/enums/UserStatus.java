@@ -7,6 +7,8 @@ public enum UserStatus {
     ACTIVE,
     INACTIVE,
     SUSPENDED,
-    DELETED
+    DELETED,
+    REJECTED,           // NEW - Admin rejected
+    COGNITO_SYNC_FAILURE // NEW - Sync failed after retries
 }
 

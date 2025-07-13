@@ -49,6 +49,7 @@ public class AuthenticationService {
     private final RoleService roleService;
     private final JwtTokenManager jwtTokenManager;
     private final SessionManager sessionManager;
+    private final UserStatusSyncService userStatusSyncService;
 
 
     public AuthenticationService(
@@ -57,13 +58,15 @@ public class AuthenticationService {
             CognitoProperties cognitoProperties,
             RoleService roleService,
             JwtTokenManager jwtTokenManager,
-            SessionManager sessionManager) {
+            SessionManager sessionManager,
+            UserStatusSyncService userStatusSyncService) {
         this.userRepository = userRepository;
         this.cognitoClient = cognitoClient;
         this.cognitoProperties = cognitoProperties;
         this.roleService = roleService;
         this.jwtTokenManager = jwtTokenManager;
         this.sessionManager = sessionManager;
+        this.userStatusSyncService = userStatusSyncService;
     }
 
     @LogExecutionTime
@@ -158,7 +161,7 @@ public class AuthenticationService {
             InitiateAuthResponse refreshResponse = cognitoClient.get().initiateAuth(refreshRequest);
 
             // Get user from database
-            User user = userRepository.findById(java.util.UUID.fromString(userId))
+            User user = userRepository.findById(UUID.fromString(userId))
                     .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
 
             // Load current user roles
@@ -237,6 +240,7 @@ public class AuthenticationService {
         }
     }
 
+    // Enhanced user validation with status sync
     private User validateLocalUser(String email) {
         log.debug("Validating user in local database: {}", email);
 
@@ -245,6 +249,28 @@ public class AuthenticationService {
                     log.error("User not found in local database: {}", email);
                     return new AuthenticationException("Invalid email or password");
                 });
+
+        // Validate status consistency between local DB and Cognito
+        if (cognitoProperties.isEnabled()) {
+            try {
+                UserStatusValidationResult validationResult =
+                        userStatusSyncService.validateUserStatusConsistency(email);
+
+                if (validationResult.hasIssues()) {
+                    log.warn("User status inconsistency detected: {}", validationResult.getSummary());
+
+                    // Attempt to sync status from Cognito if there are inconsistencies
+                    userStatusSyncService.syncUserStatusFromCognito(email);
+
+                    // Reload user to get updated status
+                    user = userRepository.findByEmail(email).orElse(user);
+                }
+
+            } catch (Exception e) {
+                log.warn("Status validation failed for user: {} - {}", email, e.getMessage());
+                // Continue with local validation only
+            }
+        }
 
         // Validate user status
         switch (user.getStatus()) {
@@ -281,47 +307,14 @@ public class AuthenticationService {
     }
 
     private void syncUserStatusWithCognito(User user, String cognitoSub) {
-        if (!cognitoProperties.isEnabled() || cognitoClient.isEmpty()) {
-            log.debug("Skipping Cognito sync - service disabled");
-            return;
-        }
-
         try {
             log.debug("Syncing user status with Cognito for user: {}", user.getEmail());
-
-            // Get current user roles
-            List<String> userRoles = roleService.getUserRoleNames(user.getId());
-            String rolesString = String.join(",", userRoles);
-
-            // Update custom attributes in Cognito
-            List<AttributeType> attributes = List.of(
-                    AttributeType.builder()
-                            .name("custom:approval_status")
-                            .value(user.getStatus().name())
-                            .build(),
-                    AttributeType.builder()
-                            .name("custom:local_user_id")
-                            .value(user.getId().toString())
-                            .build(),
-                    AttributeType.builder()
-                            .name("custom:user_roles")
-                            .value(rolesString)
-                            .build()
-            );
-
-            AdminUpdateUserAttributesRequest updateRequest = AdminUpdateUserAttributesRequest.builder()
-                    .userPoolId(cognitoProperties.getUserPoolId())
-                    .username(user.getEmail())
-                    .userAttributes(attributes)
-                    .build();
-
-            cognitoClient.get().adminUpdateUserAttributes(updateRequest);
-
+            userStatusSyncService.syncUserStatusToCognito(user);
             log.debug("User status synced successfully with Cognito for user: {}", user.getEmail());
 
-        } catch (CognitoIdentityProviderException e) {
+        } catch (Exception e) {
             log.warn("Failed to sync user status with Cognito for user: {} - Error: {}",
-                    user.getEmail(), e.awsErrorDetails().errorMessage());
+                    user.getEmail(), e.getMessage());
             // Don't fail login for sync issues, just log the warning
         }
     }

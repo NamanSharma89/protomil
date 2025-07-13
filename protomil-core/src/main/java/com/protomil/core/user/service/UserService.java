@@ -11,6 +11,7 @@ import com.protomil.core.user.domain.User;
 import com.protomil.core.user.domain.UserRole;
 import com.protomil.core.user.dto.UserApprovalRequest;
 import com.protomil.core.user.dto.UserResponse;
+import com.protomil.core.user.dto.UserStatusValidationResult;
 import com.protomil.core.user.events.UserApprovedEvent;
 import com.protomil.core.user.events.UserRoleAssignedEvent;
 import com.protomil.core.user.repository.RoleRepository;
@@ -41,17 +42,20 @@ public class UserService {
     private final UserRoleRepository userRoleRepository;
     private final CognitoIdentityProviderClient cognitoClient;
     private final ApplicationEventPublisher eventPublisher;
+    private final UserStatusSyncService userStatusSyncService;
 
     public UserService(UserRepository userRepository,
                        RoleRepository roleRepository,
                        UserRoleRepository userRoleRepository,
                        CognitoIdentityProviderClient cognitoClient,
-                       ApplicationEventPublisher eventPublisher) {
+                       ApplicationEventPublisher eventPublisher,
+                       UserStatusSyncService userStatusSyncService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
         this.cognitoClient = cognitoClient;
         this.eventPublisher = eventPublisher;
+        this.userStatusSyncService = userStatusSyncService;
     }
 
     @LogExecutionTime
@@ -64,20 +68,29 @@ public class UserService {
         }
 
         // Update user status
+        UserStatus previousStatus = user.getStatus();
         user.setStatus(UserStatus.ACTIVE);
 
-        // Assign initial roles
+        // Assign roles to user
         assignRolesToUser(user, request.getRoleIds(), getCurrentUserId(authentication));
 
-        // Enable user in Cognito
-        enableUserInCognito(user);
-
+        // Save user
         User savedUser = userRepository.save(user);
 
-        // Publish approval event
+        // Sync status to Cognito
+        try {
+            userStatusSyncService.syncUserStatusToCognito(savedUser);
+            log.info("User approval synced to Cognito successfully for user: {}", userId);
+        } catch (Exception e) {
+            log.error("Failed to sync user approval to Cognito for user: {} - {}", userId, e.getMessage());
+            // Don't fail the approval, but log the issue
+        }
+
+        // Publish event
         eventPublisher.publishEvent(new UserApprovedEvent(savedUser, getCurrentUserId(authentication)));
 
-        log.info("User approved: userId={}, approvedBy={}", userId, authentication.getName());
+        log.info("User approved and synced: userId={}, previousStatus={}, newStatus={}, approvedBy={}",
+                userId, previousStatus, savedUser.getStatus(), authentication.getName());
 
         return convertToUserResponse(savedUser);
     }
@@ -124,14 +137,20 @@ public class UserService {
             throw new BusinessException("User is already suspended");
         }
 
+        UserStatus previousStatus = user.getStatus();
         user.setStatus(UserStatus.SUSPENDED);
         User savedUser = userRepository.save(user);
 
-        // Disable user in Cognito
-        disableUserInCognito(user);
+        // Sync to Cognito
+        try {
+            userStatusSyncService.syncUserStatusToCognito(savedUser);
+            log.info("User suspension synced to Cognito successfully for user: {}", userId);
+        } catch (Exception e) {
+            log.error("Failed to sync user suspension to Cognito for user: {} - {}", userId, e.getMessage());
+        }
 
-        log.info("User suspended: userId={}, reason={}, suspendedBy={}",
-                userId, reason, authentication.getName());
+        log.info("User suspended and synced: userId={}, previousStatus={}, reason={}, suspendedBy={}",
+                userId, previousStatus, reason, authentication.getName());
 
         return convertToUserResponse(savedUser);
     }
@@ -145,13 +164,20 @@ public class UserService {
             throw new BusinessException("User is not in suspended or inactive status");
         }
 
+        UserStatus previousStatus = user.getStatus();
         user.setStatus(UserStatus.ACTIVE);
         User savedUser = userRepository.save(user);
 
-        // Enable user in Cognito
-        enableUserInCognito(user);
+        // Sync to Cognito
+        try {
+            userStatusSyncService.syncUserStatusToCognito(savedUser);
+            log.info("User reactivation synced to Cognito successfully for user: {}", userId);
+        } catch (Exception e) {
+            log.error("Failed to sync user reactivation to Cognito for user: {} - {}", userId, e.getMessage());
+        }
 
-        log.info("User reactivated: userId={}, reactivatedBy={}", userId, authentication.getName());
+        log.info("User reactivated and synced: userId={}, previousStatus={}, reactivatedBy={}",
+                userId, previousStatus, authentication.getName());
 
         return convertToUserResponse(savedUser);
     }
@@ -206,6 +232,14 @@ public class UserService {
 
         log.info("Role revoked: userId={}, roleId={}, revokedBy={}",
                 userId, roleId, authentication.getName());
+    }
+
+    @LogExecutionTime
+    public UserStatusValidationResult checkUserStatusConsistency(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+
+        return userStatusSyncService.validateUserStatusConsistency(user.getEmail());
     }
 
     private void assignRolesToUser(User user, List<UUID> roleIds, UUID assignedBy) {
