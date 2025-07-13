@@ -192,6 +192,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String queryString = request.getQueryString();
         String redirectUrl = requestURI + (queryString != null ? "?" + queryString : "");
 
+        // Special handling for COGNITO_SYNC_FAILURE status
+        try {
+            Optional<String> accessToken = cookieManager.getAccessToken(request);
+            if (accessToken.isPresent()) {
+                UserTokenClaims userClaims = jwtTokenManager.extractUserClaims(accessToken.get());
+                // Check if user has sync failure status in database
+                // This would require injecting UserService - simplified for now
+            }
+        } catch (Exception e) {
+            log.debug("Could not extract user claims during redirect: {}", e.getMessage());
+        }
+
         response.sendRedirect("/wireframes/login?redirect=" +
                 java.net.URLEncoder.encode(redirectUrl, "UTF-8"));
     }

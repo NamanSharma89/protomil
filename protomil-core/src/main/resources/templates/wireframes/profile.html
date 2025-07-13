@@ -1,0 +1,225 @@
+<!-- src/main/resources/templates/wireframes/profile.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle}">User Profile - Protomil</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+    <style>
+        .protomil-brand {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .profile-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 0 auto;
+        }
+
+        .info-card {
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .info-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .badge-role {
+            background: #667eea;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+<!-- Top Navigation -->
+<nav class="navbar navbar-expand-lg protomil-brand">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold" href="/wireframes/dashboard">
+            <i class="bi bi-gear-fill me-2"></i>
+            Protomil Core
+        </a>
+
+        <div class="navbar-nav ms-auto">
+            <a href="/wireframes/dashboard" class="nav-link text-white">
+                <i class="bi bi-arrow-left me-1"></i>
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Profile Card -->
+            <div class="card info-card">
+                <!-- Profile Header -->
+                <div class="profile-header p-4 text-center">
+                    <div class="profile-avatar" th:text="${user.firstName.substring(0,1).toUpperCase() + user.lastName.substring(0,1).toUpperCase()}">
+                        AB
+                    </div>
+                    <h2 class="mt-3 mb-1" th:text="${user.firstName + ' ' + user.lastName}">User Name</h2>
+                    <p class="mb-2 opacity-75" th:text="${user.email}">user@example.com</p>
+                    <div class="d-flex justify-content-center flex-wrap gap-2">
+                            <span th:each="role : ${user.roles}"
+                                  class="badge-role"
+                                  th:text="${role}">Role</span>
+                    </div>
+                </div>
+
+                <!-- Profile Information -->
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4">
+                        <i class="bi bi-person-lines-fill me-2"></i>
+                        Profile Information
+                    </h5>
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <label class="form-label text-muted small">First Name</label>
+                                <p class="mb-0 fw-medium" th:text="${user.firstName}">First Name</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <label class="form-label text-muted small">Last Name</label>
+                                <p class="mb-0 fw-medium" th:text="${user.lastName}">Last Name</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <label class="form-label text-muted small">Email Address</label>
+                                <p class="mb-0 fw-medium" th:text="${user.email}">email@example.com</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <label class="form-label text-muted small">Department</label>
+                                <p class="mb-0 fw-medium" th:text="${user.department ?: 'Not specified'}">Department</p>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="border rounded p-3">
+                                <label class="form-label text-muted small">User ID</label>
+                                <p class="mb-0 fw-medium font-monospace" th:text="${user.userId}">User ID</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Status Card -->
+            <div class="card info-card mt-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4">
+                        <i class="bi bi-shield-check me-2"></i>
+                        Account Status
+                    </h5>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center p-3 bg-success bg-opacity-10 rounded">
+                                <i class="bi bi-check-circle-fill text-success fs-4 me-3"></i>
+                                <div>
+                                    <h6 class="mb-1">Account Active</h6>
+                                    <small class="text-muted">Your account is fully activated</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center p-3 bg-info bg-opacity-10 rounded">
+                                <i class="bi bi-person-check-fill text-info fs-4 me-3"></i>
+                                <div>
+                                    <h6 class="mb-1">Roles Assigned</h6>
+                                    <small class="text-muted" th:text="${user.roles.size()} + ' role(s) active'">Roles active</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Card -->
+            <div class="card info-card mt-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4">
+                        <i class="bi bi-gear me-2"></i>
+                        Account Actions
+                    </h5>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <button class="btn btn-outline-primary w-100" disabled>
+                                <i class="bi bi-pencil-square me-2"></i>
+                                Edit Profile
+                                <small class="d-block text-muted">Coming in Phase 3</small>
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <button class="btn btn-outline-secondary w-100" disabled>
+                                <i class="bi bi-key me-2"></i>
+                                Change Password
+                                <small class="d-block text-muted">Coming in Phase 3</small>
+                            </button>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="text-center">
+                        <a href="/wireframes/logout" class="btn btn-outline-danger">
+                            <i class="bi bi-box-arrow-right me-2"></i>
+                            Sign Out
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Card -->
+            <div class="card info-card mt-4 mb-4">
+                <div class="card-body p-4 text-center">
+                    <h6 class="card-title">
+                        <i class="bi bi-question-circle me-2"></i>
+                        Need Help?
+                    </h6>
+                    <p class="card-text text-muted small">
+                        If you need assistance or have questions about your account,
+                        please contact your system administrator.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

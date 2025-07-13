@@ -15,6 +15,7 @@ import com.protomil.core.shared.security.UserTokenClaims;
 import com.protomil.core.user.domain.User;
 import com.protomil.core.user.dto.LoginRequest;
 import com.protomil.core.user.dto.LoginResponse;
+import com.protomil.core.user.dto.UserStatusValidationResult;
 import com.protomil.core.user.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

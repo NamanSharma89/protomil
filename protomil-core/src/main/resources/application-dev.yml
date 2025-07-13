@@ -85,19 +85,23 @@ protomil:
       domain: ${COOKIE_DOMAIN:}
       path: /
   ui:
-    login:
-      company-logo: ${COMPANY_LOGO_URL:}
-      company-name: ${COMPANY_NAME:Protomil}
-      company-tagline: ${COMPANY_TAGLINE:Manufacturing Execution System}
-      enable-remember-me: true
-      enable-forgot-password: true
+    dashboard:
+      auto-refresh-interval: 300000  # 5 minutes
+      widgets:
+        enabled: true
+        show-phase-info: true
+      navigation:
+        show-disabled-items: true
+        show-tooltips: true
   user-status:
     sync:
-      enabled: true  # Enable scheduled sync jobs
-      validation-interval: 3600000  # 1 hour in milliseconds
-      sync-interval: 86400000       # 24 hours in milliseconds
-      pending-check-interval: 1800000  # 30 minutes in milliseconds
-      max-pending-days: 7           # Alert after 7 days in pending status
+      enabled: true
+      daily-sync-times: ["06:00", "18:00"]  # 6 AM and 6 PM
+      retry-attempts: 2
+      retry-delay: 5000  # 5 seconds
+      failure-status-after-retries: true
+      block-login-on-sync-failure: true       # Alert after 7 days in pending status
+
     cognito:
       sync-on-login: true          # Validate status consistency on every login
       sync-on-status-change: true  # Auto-sync when status changes locally

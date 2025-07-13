@@ -335,6 +335,8 @@ public class UserStatusSyncService {
             case SUSPENDED -> cognitoStatus == UserStatusType.CONFIRMED && !cognitoInfo.isEnabled();
             case INACTIVE -> cognitoStatus == UserStatusType.CONFIRMED && !cognitoInfo.isEnabled();
             case DELETED -> false; // Deleted users shouldn't exist in Cognito
+            case REJECTED -> false;
+            case COGNITO_SYNC_FAILURE -> false;
         };
     }
 
