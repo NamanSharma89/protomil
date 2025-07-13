@@ -8,6 +8,10 @@ import com.protomil.core.shared.exception.BusinessException;
 import com.protomil.core.shared.exception.ExternalServiceException;
 import com.protomil.core.shared.exception.ResourceNotFoundException;
 import com.protomil.core.shared.logging.LogExecutionTime;
+import com.protomil.core.shared.security.JwtTokenManager;
+import com.protomil.core.shared.security.SessionManager;
+import com.protomil.core.shared.security.TokenPair;
+import com.protomil.core.shared.security.UserTokenClaims;
 import com.protomil.core.user.domain.User;
 import com.protomil.core.user.dto.LoginRequest;
 import com.protomil.core.user.dto.LoginResponse;
@@ -31,10 +35,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UserNotConf
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserNotFoundException;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,16 +47,23 @@ public class AuthenticationService {
     private final Optional<CognitoIdentityProviderClient> cognitoClient;
     private final CognitoProperties cognitoProperties;
     private final RoleService roleService;
+    private final JwtTokenManager jwtTokenManager;
+    private final SessionManager sessionManager;
+
 
     public AuthenticationService(
             UserRepository userRepository,
             Optional<CognitoIdentityProviderClient> cognitoClient,
             CognitoProperties cognitoProperties,
-            RoleService roleService) {
+            RoleService roleService,
+            JwtTokenManager jwtTokenManager,
+            SessionManager sessionManager) {
         this.userRepository = userRepository;
         this.cognitoClient = cognitoClient;
         this.cognitoProperties = cognitoProperties;
         this.roleService = roleService;
+        this.jwtTokenManager = jwtTokenManager;
+        this.sessionManager = sessionManager;
     }
 
     @LogExecutionTime
@@ -75,10 +83,28 @@ public class AuthenticationService {
             // Step 4: Load user roles and permissions
             List<String> userRoles = roleService.getUserRoleNames(user.getId());
 
-            // Step 5: Update last login time
+            // Step 5: Create user token claims
+            UserTokenClaims userClaims = UserTokenClaims.builder()
+                    .cognitoSub(user.getCognitoUserSub())
+                    .userId(user.getId())
+                    .email(user.getEmail())
+                    .firstName(user.getFirstName())
+                    .lastName(user.getLastName())
+                    .department(user.getDepartment())
+                    .roles(userRoles)
+                    .tokenType("access")
+                    .build();
+
+            // Step 6: Generate JWT token pair
+            TokenPair tokenPair = jwtTokenManager.generateTokenPair(userClaims);
+
+            // Step 7: Create session
+            sessionManager.createSession(user.getId(), userClaims);
+
+            // Step 8: Update last login time
             updateLastLoginTime(user);
 
-            // Step 6: Build successful login response
+            // Step 9: Build successful login response
             LoginResponse response = LoginResponse.builder()
                     .userId(user.getId())
                     .email(user.getEmail())
@@ -86,9 +112,9 @@ public class AuthenticationService {
                     .lastName(user.getLastName())
                     .department(user.getDepartment())
                     .roles(userRoles)
-                    .accessToken(cognitoResult.getAccessToken())
-                    .refreshToken(cognitoResult.getRefreshToken())
-                    .expiresIn(cognitoResult.getExpiresIn())
+                    .accessToken(tokenPair.getAccessToken())
+                    .refreshToken(tokenPair.getRefreshToken())
+                    .expiresIn(tokenPair.getAccessTokenExpiresIn())
                     .loginTime(LocalDateTime.now())
                     .rememberMe(loginRequest.getRememberMe())
                     .build();
@@ -351,6 +377,24 @@ public class AuthenticationService {
                 yield new AuthenticationException("Authentication failed: " + e.awsErrorDetails().errorMessage());
             }
         };
+    }
+
+    @LogExecutionTime
+    public void logout(UUID userId) {
+        log.info("Processing logout for user: {}", userId);
+
+        try {
+            // Invalidate session
+            sessionManager.invalidateSession(userId);
+
+            // TODO: Revoke tokens in Cognito if needed
+
+            log.info("Logout completed successfully for user: {}", userId);
+
+        } catch (Exception e) {
+            log.error("Error during logout for user: {}", userId, e);
+            // Don't throw exception for logout errors
+        }
     }
 
     // Inner class for Cognito authentication result

@@ -3,6 +3,10 @@ package com.protomil.core.user.controller;
 
 import com.protomil.core.shared.exception.AuthenticationException;
 import com.protomil.core.shared.exception.BusinessException;
+import com.protomil.core.shared.security.CookieManager;
+import com.protomil.core.shared.security.SessionManager;
+import com.protomil.core.shared.security.TokenPair;
+import com.protomil.core.shared.security.UserTokenClaims;
 import com.protomil.core.user.dto.LoginRequest;
 import com.protomil.core.user.dto.LoginResponse;
 import com.protomil.core.user.service.AuthenticationService;
@@ -39,8 +43,15 @@ public class LoginController {
     @Value("${protomil.ui.login.company-tagline:Manufacturing Execution System}")
     private String companyTagline;
 
-    public LoginController(AuthenticationService authenticationService) {
+    private final CookieManager cookieManager;
+    private final SessionManager sessionManager;
+
+    public LoginController(AuthenticationService authenticationService,
+                           CookieManager cookieManager,
+                           SessionManager sessionManager) {
         this.authenticationService = authenticationService;
+        this.cookieManager = cookieManager;
+        this.sessionManager = sessionManager;
     }
 
     @GetMapping("/login")
@@ -112,8 +123,31 @@ public class LoginController {
             // Authenticate user
             LoginResponse loginResponse = authenticationService.authenticateUser(loginRequest);
 
+            // Create user token claims for cookie
+            UserTokenClaims userClaims = UserTokenClaims.builder()
+                    .cognitoSub(loginResponse.getEmail()) // Using email as cognito sub for now
+                    .userId(loginResponse.getUserId())
+                    .email(loginResponse.getEmail())
+                    .firstName(loginResponse.getFirstName())
+                    .lastName(loginResponse.getLastName())
+                    .department(loginResponse.getDepartment())
+                    .roles(loginResponse.getRoles())
+                    .tokenType("access")
+                    .build();
+
+            // Create token pair for cookie
+            TokenPair tokenPair = TokenPair.builder()
+                    .accessToken(loginResponse.getAccessToken())
+                    .refreshToken(loginResponse.getRefreshToken())
+                    .accessTokenExpiresIn(loginResponse.getExpiresIn())
+                    .refreshTokenExpiresIn(7200) // 2 hours
+                    .tokenType("Bearer")
+                    .issuedAt(loginResponse.getLoginTime())
+                    .build();
+
             // Set authentication cookies
-            setAuthenticationCookies(response, loginResponse);
+            cookieManager.setAuthenticationCookies(response, tokenPair, userClaims,
+                    loginRequest.getRememberMe());
 
             // Determine redirect URL
             String targetUrl = determineRedirectUrl(redirectUrl);
@@ -144,20 +178,33 @@ public class LoginController {
         }
     }
 
+
     @GetMapping("/logout")
-    public String logout(HttpServletRequest request, HttpServletResponse response, RedirectAttributes redirectAttributes) {
+    public String logout(HttpServletRequest request, HttpServletResponse response,
+                         RedirectAttributes redirectAttributes) {
         log.info("Processing logout request");
 
-        // Clear authentication cookies
-        clearAuthenticationCookies(response);
+        try {
+            // Get user from request if available
+            UserTokenClaims userClaims = (UserTokenClaims) request.getAttribute("authenticatedUser");
+            if (userClaims != null) {
+                authenticationService.logout(userClaims.getUserId());
+            }
 
-        // TODO: Invalidate session and revoke tokens in Phase 1.3
+        } catch (Exception e) {
+            log.warn("Error during logout process: {}", e.getMessage());
+            // Continue with logout even if there are errors
+        }
+
+        // Clear authentication cookies
+        cookieManager.clearAuthenticationCookies(response);
 
         redirectAttributes.addFlashAttribute("message", "You have been logged out successfully.");
 
         log.info("Logout completed successfully");
         return "redirect:/wireframes/login";
     }
+
 
     private void setAuthenticationCookies(HttpServletResponse response, LoginResponse loginResponse) {
         // Access token cookie (HttpOnly for security)
@@ -211,16 +258,7 @@ public class LoginController {
     }
 
     private boolean isUserAuthenticated(HttpServletRequest request) {
-        // Check for access token cookie
-        if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if ("ACCESS_TOKEN".equals(cookie.getName()) && StringUtils.hasText(cookie.getValue())) {
-                    // TODO: Validate token in Phase 1.3
-                    return true;
-                }
-            }
-        }
-        return false;
+        return cookieManager.hasValidAuthCookies(request);
     }
 
     private boolean isSafeRedirectUrl(String redirectUrl) {
