@@ -251,56 +251,53 @@ public class AuthenticationService {
                     return new AuthenticationException("Invalid email or password");
                 });
 
-        // Validate status consistency between local DB and Cognito
+        // Add debug logging here
+        log.info("DEBUG: User found - email: {}, status: {}, cognitoSub: {}",
+                user.getEmail(), user.getStatus(), user.getCognitoUserSub());
+
         if (cognitoProperties.isEnabled()) {
             try {
-                UserStatusValidationResult validationResult =
-                        userStatusSyncService.validateUserStatusConsistency(email);
+                UserStatusValidationResult validationResult = userStatusSyncService.validateUserStatusConsistency(email);
+                log.info("DEBUG: Status validation result - consistent: {}, localStatus: {}, cognitoExists: {}",
+                        validationResult.isConsistent(), validationResult.getLocalStatus(), validationResult.isCognitoUserExists());
 
                 if (validationResult.hasIssues()) {
                     log.warn("User status inconsistency detected: {}", validationResult.getSummary());
-
-                    // Attempt to sync status from Cognito if there are inconsistencies
-                    userStatusSyncService.syncUserStatusFromCognito(email);
-
-                    // Reload user to get updated status
-                    user = userRepository.findByEmail(email).orElse(user);
+                    // Comment out this sync temporarily to debug
+                    // userStatusSyncService.syncUserStatusFromCognito(email);
+                    // user = userRepository.findByEmail(email).orElse(user);
                 }
-
             } catch (Exception e) {
                 log.warn("Status validation failed for user: {} - {}", email, e.getMessage());
-                // Continue with local validation only
             }
         }
 
-        // Validate user status
+        // Add more debug logging before the switch statement
+        log.info("DEBUG: About to validate status - current user status: {}", user.getStatus());
+        log.info("DEBUG: UserStatus.ACTIVE enum value: {}", UserStatus.ACTIVE);
+        log.info("DEBUG: Status equals ACTIVE check: {}", user.getStatus() == UserStatus.ACTIVE);
+
         switch (user.getStatus()) {
             case PENDING_VERIFICATION:
-                log.warn("User attempting login with unverified email: {}", email);
+                log.error("DEBUG: User status is PENDING_VERIFICATION for: {}", email);
                 throw new BusinessException("Email not verified. Please check your email for verification code.");
-
             case PENDING_APPROVAL:
-                log.warn("User attempting login while pending approval: {}", email);
+                log.error("DEBUG: User status is PENDING_APPROVAL for: {}", email);
                 throw new BusinessException("Your account is pending administrator approval.");
-
             case SUSPENDED:
-                log.warn("Suspended user attempting login: {}", email);
+                log.error("DEBUG: User status is SUSPENDED for: {}", email);
                 throw new BusinessException("Your account has been suspended. Please contact support.");
-
             case DELETED:
-                log.warn("Deleted user attempting login: {}", email);
+                log.error("DEBUG: User status is DELETED for: {}", email);
                 throw new AuthenticationException("Invalid email or password");
-
             case INACTIVE:
-                log.warn("Inactive user attempting login: {}", email);
+                log.error("DEBUG: User status is INACTIVE for: {}", email);
                 throw new BusinessException("Your account is inactive. Please contact support.");
-
             case ACTIVE:
-                log.debug("User status validation successful: {}", email);
+                log.info("DEBUG: User status validation successful: {}", email);
                 break;
-
             default:
-                log.error("Unknown user status for user: {} - Status: {}", email, user.getStatus());
+                log.error("DEBUG: Unknown user status for user: {} - Status: {}", email, user.getStatus());
                 throw new BusinessException("Account status error. Please contact support.");
         }
 

@@ -226,11 +226,7 @@ CLIENT_CREATION_OUTPUT=$(aws cognito-idp create-user-pool-client \
         "IdToken": "minutes",
         "RefreshToken": "minutes"
     }' \
-    --explicit-auth-flows '[
-        "ALLOW_USER_PASSWORD_AUTH",
-        "ALLOW_REFRESH_TOKEN_AUTH",
-        "ALLOW_USER_SRP_AUTH"
-    ]' \
+    --explicit-auth-flows='["ALLOW_ADMIN_USER_PASSWORD_AUTH","ALLOW_USER_PASSWORD_AUTH","ALLOW_REFRESH_TOKEN_AUTH","ALLOW_USER_SRP_AUTH"]'  \
     --supported-identity-providers '["COGNITO"]' \
     --write-attributes '[
         "email",
