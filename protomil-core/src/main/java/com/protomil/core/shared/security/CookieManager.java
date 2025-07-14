@@ -83,7 +83,16 @@ public class CookieManager {
 
     @LogExecutionTime
     public Optional<String> getUserInfo(HttpServletRequest request) {
-        return getCookieValue(request, USER_INFO_COOKIE);
+        Optional<String> encodedUserInfo = getCookieValue(request, USER_INFO_COOKIE);
+        if (encodedUserInfo.isPresent()) {
+            try {
+                return Optional.of(java.net.URLDecoder.decode(encodedUserInfo.get(), java.nio.charset.StandardCharsets.UTF_8));
+            } catch (Exception e) {
+                log.warn("Failed to decode user info cookie", e);
+                return Optional.empty();
+            }
+        }
+        return Optional.empty();
     }
 
     @LogExecutionTime
@@ -142,16 +151,24 @@ public class CookieManager {
     }
 
     private String createUserInfoJson(UserTokenClaims userClaims) {
-        // Simple JSON creation - in production, consider using ObjectMapper
-        return String.format(
-                "{\"userId\":\"%s\",\"email\":\"%s\",\"firstName\":\"%s\",\"lastName\":\"%s\",\"department\":\"%s\",\"roles\":%s}",
-                userClaims.getUserId(),
-                escapeJson(userClaims.getEmail()),
-                escapeJson(userClaims.getFirstName()),
-                escapeJson(userClaims.getLastName()),
-                escapeJson(userClaims.getDepartment()),
-                formatRolesJson(userClaims.getRoles())
-        );
+        try {
+            String userInfoJson = String.format(
+                    "{\"userId\":\"%s\",\"email\":\"%s\",\"firstName\":\"%s\",\"lastName\":\"%s\",\"department\":\"%s\",\"roles\":%s}",
+                    userClaims.getUserId(),
+                    escapeJson(userClaims.getEmail()),
+                    escapeJson(userClaims.getFirstName()),
+                    escapeJson(userClaims.getLastName()),
+                    escapeJson(userClaims.getDepartment()),
+                    formatRolesJson(userClaims.getRoles())
+            );
+
+            // URL-encode the entire JSON to make it cookie-safe
+            return java.net.URLEncoder.encode(userInfoJson, java.nio.charset.StandardCharsets.UTF_8);
+
+        } catch (Exception e) {
+            log.error("Error creating user info JSON", e);
+            return "";
+        }
     }
 
     private String escapeJson(String value) {

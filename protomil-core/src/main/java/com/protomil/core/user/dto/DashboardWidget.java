@@ -1,4 +1,3 @@
-// src/main/java/com/protomil/core/user/dto/DashboardWidget.java
 package com.protomil.core.user.dto;
 
 import lombok.AllArgsConstructor;
@@ -11,14 +10,19 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class DashboardWidget {
-
     private String id;
     private String title;
-    private String type; // primary, secondary, success, danger, warning, info
+    private String type;
     private String content;
     private String icon;
     private int order;
-    private String size = "col-12"; // Bootstrap column classes
+
+    @Builder.Default
+    private String size = "col-12";
+
+    @Builder.Default
     private boolean enabled = true;
-    private String url; // Optional click-through URL
+
+    @Builder.Default
+    private String url = ""; // Changed from null to empty string
 }

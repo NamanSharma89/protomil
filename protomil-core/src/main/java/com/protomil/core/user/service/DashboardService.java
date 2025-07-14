@@ -1,4 +1,3 @@
-// src/main/java/com/protomil/core/user/service/DashboardService.java
 package com.protomil.core.user.service;
 
 import com.protomil.core.shared.logging.LogExecutionTime;
@@ -8,6 +7,7 @@ import com.protomil.core.user.dto.NavigationItem;
 import com.protomil.core.user.dto.DashboardWidget;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,10 +27,7 @@ public class DashboardService {
         log.debug("Building dashboard data for user: {} with roles: {}",
                 userClaims.getUserId(), userClaims.getRoles());
 
-        // Build navigation based on user roles
         List<NavigationItem> navigation = buildNavigationMenu(userClaims);
-
-        // Build dashboard widgets based on user roles
         List<DashboardWidget> widgets = buildDashboardWidgets(userClaims);
 
         return DashboardData.builder()
@@ -48,26 +45,25 @@ public class DashboardService {
         List<NavigationItem> navigation = new ArrayList<>();
         List<String> roles = userClaims.getRoles();
 
-        // Dashboard - Always available
         navigation.add(NavigationItem.builder()
                 .id("dashboard")
                 .label("Dashboard")
                 .icon("bi-speedometer2")
                 .url("/wireframes/dashboard")
                 .active(true)
+                .enabled(true)
                 .order(1)
                 .build());
 
-        // User Profile - Always available
         navigation.add(NavigationItem.builder()
                 .id("profile")
                 .label("My Profile")
                 .icon("bi-person-circle")
                 .url("/wireframes/profile")
+                .enabled(true)
                 .order(2)
                 .build());
 
-        // Job Cards - For TECHNICIAN, SUPERVISOR, ADMIN
         if (hasAnyRole(roles, "TECHNICIAN", "SUPERVISOR", "ADMIN")) {
             navigation.add(NavigationItem.builder()
                     .id("jobcards")
@@ -75,12 +71,11 @@ public class DashboardService {
                     .icon("bi-clipboard-check")
                     .url("/wireframes/jobcards")
                     .order(3)
-                    .enabled(false) // Phase 2
+                    .enabled(false)
                     .tooltip("Available in Phase 2")
                     .build());
         }
 
-        // Equipment Management - For SUPERVISOR, ADMIN
         if (hasAnyRole(roles, "SUPERVISOR", "ADMIN")) {
             navigation.add(NavigationItem.builder()
                     .id("equipment")
@@ -88,12 +83,11 @@ public class DashboardService {
                     .icon("bi-gear-fill")
                     .url("/wireframes/equipment")
                     .order(4)
-                    .enabled(false) // Phase 4
+                    .enabled(false)
                     .tooltip("Available in Phase 4")
                     .build());
         }
 
-        // User Management - For ADMIN only
         if (hasAnyRole(roles, "ADMIN")) {
             navigation.add(NavigationItem.builder()
                     .id("users")
@@ -101,12 +95,11 @@ public class DashboardService {
                     .icon("bi-people-fill")
                     .url("/wireframes/users")
                     .order(5)
-                    .enabled(false) // Phase 3
+                    .enabled(false)
                     .tooltip("Available in Phase 3")
                     .build());
         }
 
-        // Reports - For SUPERVISOR, ADMIN
         if (hasAnyRole(roles, "SUPERVISOR", "ADMIN")) {
             navigation.add(NavigationItem.builder()
                     .id("reports")
@@ -114,7 +107,7 @@ public class DashboardService {
                     .icon("bi-graph-up")
                     .url("/wireframes/reports")
                     .order(6)
-                    .enabled(false) // Phase 5
+                    .enabled(false)
                     .tooltip("Available in Phase 5")
                     .build());
         }
@@ -126,7 +119,7 @@ public class DashboardService {
         List<DashboardWidget> widgets = new ArrayList<>();
         List<String> roles = userClaims.getRoles();
 
-        // Welcome Widget - Always shown
+        // Welcome widget - always shown, no URL needed
         widgets.add(DashboardWidget.builder()
                 .id("welcome")
                 .title("Welcome, " + userClaims.getFirstName())
@@ -135,9 +128,10 @@ public class DashboardService {
                 .icon("bi-house-heart")
                 .order(1)
                 .size("col-12")
+                .enabled(true)
+                .url("") // Explicitly set empty URL for widgets without actions
                 .build());
 
-        // Pending User Widget - For users with PENDING_USER role
         if (hasAnyRole(roles, "PENDING_USER")) {
             widgets.add(DashboardWidget.builder()
                     .id("pending_approval")
@@ -147,10 +141,11 @@ public class DashboardService {
                     .icon("bi-clock-history")
                     .order(2)
                     .size("col-12")
+                    .enabled(true)
+                    .url("") // No action URL for this widget
                     .build());
         }
 
-        // My Job Cards Widget - For TECHNICIAN
         if (hasAnyRole(roles, "TECHNICIAN")) {
             widgets.add(DashboardWidget.builder()
                     .id("my_jobcards")
@@ -161,10 +156,10 @@ public class DashboardService {
                     .order(3)
                     .size("col-md-6")
                     .enabled(false)
+                    .url("/wireframes/jobcards") // Set URL for future use
                     .build());
         }
 
-        // Team Overview Widget - For SUPERVISOR
         if (hasAnyRole(roles, "SUPERVISOR")) {
             widgets.add(DashboardWidget.builder()
                     .id("team_overview")
@@ -175,10 +170,10 @@ public class DashboardService {
                     .order(4)
                     .size("col-md-6")
                     .enabled(false)
+                    .url("/wireframes/team") // Set URL for future use
                     .build());
         }
 
-        // System Overview Widget - For ADMIN
         if (hasAnyRole(roles, "ADMIN")) {
             widgets.add(DashboardWidget.builder()
                     .id("system_overview")
@@ -189,6 +184,7 @@ public class DashboardService {
                     .order(5)
                     .size("col-md-6")
                     .enabled(false)
+                    .url("/wireframes/admin") // Set URL for future use
                     .build());
         }
 

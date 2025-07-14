@@ -227,7 +227,7 @@
                                         </small>
                                     </div>
 
-                                    <div th:if="${widget.url and widget.enabled}" class="mt-3">
+                                    <div th:if="${#strings.isEmpty(widget.url) == false and widget.enabled}" class="mt-3">
                                         <a th:href="${widget.url}" class="btn btn-sm btn-outline-primary">
                                             View Details <i class="bi bi-arrow-right ms-1"></i>
                                         </a>

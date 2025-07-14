@@ -6,8 +6,8 @@ echo "=== Syncing User with Cognito ==="
 # Configuration
 export AWS_PROFILE=protomil-dev
 export AWS_REGION=ap-south-1
-export AWS_COGNITO_DEV_USER_POOL_ID="ap-south-1_vFaRNroNg"
-export AWS_COGNITO_DEV_CLIENT_ID="2bsn4p4i1s6bcm8m1r5vvcpb55"
+export AWS_COGNITO_DEV_USER_POOL_ID=ap-south-1_vFaRNroNg
+export AWS_COGNITO_DEV_CLIENT_ID=2bsn4p4i1s6bcm8m1r5vvcpb55
 USER_EMAIL="dev.namansharma89@gmail.com"
 
 # Colors
