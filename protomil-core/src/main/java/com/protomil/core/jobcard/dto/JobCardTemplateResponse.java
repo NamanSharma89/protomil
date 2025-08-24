@@ -33,7 +33,7 @@ public class JobCardTemplateResponse {
     private String category;
 
     @Schema(description = "Template version", example = "1")
-    private Integer version;
+    private Long version;
 
     @Schema(description = "Is template active", example = "true")
     private Boolean isActive;

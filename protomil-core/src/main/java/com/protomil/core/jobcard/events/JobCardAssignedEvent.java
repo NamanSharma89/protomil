@@ -5,14 +5,16 @@ import com.protomil.core.jobcard.domain.Machine;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 
+import java.util.UUID;
+
 @Getter
 public class JobCardAssignedEvent extends ApplicationEvent {
 
     private final JobCard jobCard;
-    private final Long assignedUserId;
+    private final UUID assignedUserId;
     private final Machine machine;
 
-    public JobCardAssignedEvent(Object source, JobCard jobCard, Long assignedUserId, Machine machine) {
+    public JobCardAssignedEvent(Object source, JobCard jobCard, UUID assignedUserId, Machine machine) {
         super(source);
         this.jobCard = jobCard;
         this.assignedUserId = assignedUserId;

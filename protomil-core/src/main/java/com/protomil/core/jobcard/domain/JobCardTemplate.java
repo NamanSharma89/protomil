@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "job_card_templates", indexes = {
@@ -43,14 +44,14 @@ public class JobCardTemplate extends AuditableEntity {
 
     @Column(name = "version", nullable = false)
     @Builder.Default
-    private Integer version = 1;
+    private Long version = 1L;
 
     @Column(name = "is_active")
     @Builder.Default
     private Boolean isActive = true;
 
     @Column(name = "created_by", nullable = false)
-    private Long createdBy;
+    private UUID createdBy;
 
     @OneToMany(mappedBy = "template", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default

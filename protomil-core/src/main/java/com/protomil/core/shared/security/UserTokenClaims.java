@@ -8,20 +8,29 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 import java.util.UUID;
 
+/*
+*
+* Do not modify unless really need to. Main model for JWT format.
+*
+*
+* */
+
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class UserTokenClaims {
 
-    private UUID userId; // Can be String, Long, or Integer depending on JWT implementation
+    private String cognitoSub;
+    private UUID userId;
     private String email;
     private String firstName;
     private String lastName;
     private String department;
     private String employeeId;
     private List<String> roles;
-    private String cognitoUserSub;
+    private String tokenType;
 
     // Convenience methods
     public String getFullName() {
@@ -43,5 +52,13 @@ public class UserTokenClaims {
             }
         }
         return false;
+    }
+
+    public boolean isAccessToken() {
+        return "access".equals(tokenType);
+    }
+
+    public boolean isRefreshToken() {
+        return "refresh".equals(tokenType);
     }
 }

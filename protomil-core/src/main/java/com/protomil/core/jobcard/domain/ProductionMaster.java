@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "production_master", indexes = {
@@ -187,7 +188,7 @@ public class ProductionMaster {
     private Boolean isValidated = false;
 
     @Column(name = "validated_by")
-    private Long validatedBy;
+    private UUID validatedBy;
 
     @Column(name = "validated_at")
     private LocalDateTime validatedAt;

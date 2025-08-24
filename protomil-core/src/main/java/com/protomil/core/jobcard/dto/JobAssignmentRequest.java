@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,7 +19,7 @@ public class JobAssignmentRequest {
 
     @NotNull(message = "Assigned user ID is required")
     @Schema(description = "User ID to assign the job card to", example = "123")
-    private Long assignedTo;
+    private UUID assignedTo;
 
     @Schema(description = "Machine ID to assign (optional)", example = "456")
     private Long machineId;

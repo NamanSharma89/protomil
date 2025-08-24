@@ -42,4 +42,6 @@ public interface TemplateFieldDefinitionRepository extends JpaRepository<Templat
     // Statistics
     @Query("SELECT COUNT(tfd) FROM TemplateFieldDefinition tfd WHERE tfd.template.id = :templateId AND tfd.isRequired = true")
     Long countRequiredFieldsByTemplateId(@Param("templateId") Long templateId);
+
+    Long countByTemplateId(Long templateId);
 }

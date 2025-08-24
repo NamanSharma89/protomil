@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "job_card_assignments", indexes = {
@@ -31,14 +32,14 @@ public class JobCardAssignment {
     private JobCard jobCard;
 
     @Column(name = "assigned_to", nullable = false)
-    private Long assignedTo;
+    private UUID assignedTo;
 
     @Column(name = "assigned_by", nullable = false)
-    private Long assignedBy;
+    private UUID assignedBy;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "machine_id")
-    private Machine machine;
+    private com.protomil.core.jobcard.domain.Machine machine;
 
     @Column(name = "assignment_reason", columnDefinition = "TEXT")
     private String assignmentReason;

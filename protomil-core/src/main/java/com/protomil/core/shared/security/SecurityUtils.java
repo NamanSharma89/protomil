@@ -8,6 +8,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 public class SecurityUtils {
@@ -17,12 +18,12 @@ public class SecurityUtils {
     }
 
     /**
-     * Gets the current authenticated user's ID
+     * Gets the current authenticated user's ID as UUID
      *
-     * @return Current user ID as Long
+     * @return Current user ID as UUID
      * @throws SecurityException if no user is authenticated or user ID cannot be extracted
      */
-    public static Long getCurrentUserId() {
+    public static UUID getCurrentUserId() {
         Authentication authentication = getCurrentAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -31,33 +32,38 @@ public class SecurityUtils {
 
         Object principal = authentication.getPrincipal();
 
-        // Handle different types of principal objects
+        // Handle UserTokenClaims (primary case)
         if (principal instanceof UserTokenClaims) {
             UserTokenClaims claims = (UserTokenClaims) principal;
-            return parseLongSafely(claims.getUserId());
+            UUID userId = claims.getUserId();
+            if (userId == null) {
+                throw new SecurityException("User ID is null in token claims");
+            }
+            return userId;
         }
 
+        // Handle UserDetails (fallback)
         if (principal instanceof UserDetails) {
             UserDetails userDetails = (UserDetails) principal;
             String username = userDetails.getUsername();
 
-            // Try to parse username as user ID if it's numeric
+            // Try to parse username as UUID if it looks like one
             try {
-                return Long.parseLong(username);
-            } catch (NumberFormatException e) {
-                log.debug("Username '{}' is not numeric, attempting to extract user ID", username);
-                // If username is email, you might need to look up user ID from database
-                throw new SecurityException("Cannot extract user ID from username: " + username);
+                return UUID.fromString(username);
+            } catch (IllegalArgumentException e) {
+                log.debug("Username '{}' is not a valid UUID", username);
+                throw new SecurityException("Cannot extract UUID from username: " + username);
             }
         }
 
+        // Handle String principal
         if (principal instanceof String) {
             String principalString = (String) principal;
             try {
-                return Long.parseLong(principalString);
-            } catch (NumberFormatException e) {
-                log.debug("Principal string '{}' is not a valid user ID", principalString);
-                throw new SecurityException("Cannot parse user ID from principal: " + principalString);
+                return UUID.fromString(principalString);
+            } catch (IllegalArgumentException e) {
+                log.debug("Principal string '{}' is not a valid UUID", principalString);
+                throw new SecurityException("Cannot parse UUID from principal: " + principalString);
             }
         }
 
@@ -70,7 +76,7 @@ public class SecurityUtils {
      *
      * @return Optional containing user ID, empty if no authenticated user
      */
-    public static Optional<Long> getCurrentUserIdOptional() {
+    public static Optional<UUID> getCurrentUserIdOptional() {
         try {
             return Optional.of(getCurrentUserId());
         } catch (SecurityException e) {
@@ -96,7 +102,11 @@ public class SecurityUtils {
 
         if (principal instanceof UserTokenClaims) {
             UserTokenClaims claims = (UserTokenClaims) principal;
-            return claims.getEmail();
+            String email = claims.getEmail();
+            if (email == null || email.trim().isEmpty()) {
+                throw new SecurityException("Email is null or empty in token claims");
+            }
+            return email;
         }
 
         if (principal instanceof UserDetails) {
@@ -208,9 +218,7 @@ public class SecurityUtils {
 
         if (principal instanceof UserTokenClaims) {
             UserTokenClaims claims = (UserTokenClaims) principal;
-            String firstName = claims.getFirstName() != null ? claims.getFirstName() : "";
-            String lastName = claims.getLastName() != null ? claims.getLastName() : "";
-            return (firstName + " " + lastName).trim();
+            return claims.getFullName();
         }
 
         return "";
@@ -233,6 +241,28 @@ public class SecurityUtils {
         if (principal instanceof UserTokenClaims) {
             UserTokenClaims claims = (UserTokenClaims) principal;
             return claims.getDepartment();
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets the current user's Cognito subject
+     *
+     * @return Cognito subject or null if not available
+     */
+    public static String getCurrentUserCognitoSub() {
+        Authentication authentication = getCurrentAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof UserTokenClaims) {
+            UserTokenClaims claims = (UserTokenClaims) principal;
+            return claims.getCognitoSub();
         }
 
         return null;
@@ -277,13 +307,13 @@ public class SecurityUtils {
      * @param resourceOwnerId ID of the resource owner
      * @return true if current user can access the resource
      */
-    public static boolean canAccessResource(Long resourceOwnerId) {
+    public static boolean canAccessResource(UUID resourceOwnerId) {
         if (resourceOwnerId == null) {
             return false;
         }
 
         try {
-            Long currentUserId = getCurrentUserId();
+            UUID currentUserId = getCurrentUserId();
 
             // User can always access their own resources
             if (currentUserId.equals(resourceOwnerId)) {
@@ -305,41 +335,10 @@ public class SecurityUtils {
      * @param resourceOwnerId ID of the resource owner
      * @throws SecurityException if user cannot modify the resource
      */
-    public static void validateResourceAccess(Long resourceOwnerId) {
+    public static void validateResourceAccess(UUID resourceOwnerId) {
         if (!canAccessResource(resourceOwnerId)) {
             throw new SecurityException("Access denied to resource owned by user: " + resourceOwnerId);
         }
-    }
-
-    /**
-     * Helper method to safely parse string to Long
-     *
-     * @param value String value to parse
-     * @return Parsed Long value
-     * @throws SecurityException if parsing fails
-     */
-    private static Long parseLongSafely(Object value) {
-        if (value == null) {
-            throw new SecurityException("User ID is null");
-        }
-
-        if (value instanceof Long) {
-            return (Long) value;
-        }
-
-        if (value instanceof Integer) {
-            return ((Integer) value).longValue();
-        }
-
-        if (value instanceof String) {
-            try {
-                return Long.parseLong((String) value);
-            } catch (NumberFormatException e) {
-                throw new SecurityException("Invalid user ID format: " + value);
-            }
-        }
-
-        throw new SecurityException("Cannot convert user ID to Long: " + value.getClass().getName());
     }
 
     /**
@@ -347,13 +346,13 @@ public class SecurityUtils {
      *
      * @return User ID for audit logging
      */
-    public static Long getUserIdForAudit() {
+    public static UUID getUserIdForAudit() {
         try {
             return getCurrentUserId();
         } catch (SecurityException e) {
-            // Return system user ID for system operations
+            // Return system user UUID for system operations
             log.debug("No authenticated user for audit, using system user ID");
-            return -1L; // System user ID
+            return UUID.fromString("00000000-0000-0000-0000-000000000001"); // System user UUID
         }
     }
 
@@ -364,10 +363,62 @@ public class SecurityUtils {
      */
     public static boolean isSystemOperation() {
         try {
-            Long userId = getCurrentUserId();
-            return userId != null && userId.equals(-1L);
+            UUID userId = getCurrentUserId();
+            UUID systemUserId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+            return userId != null && userId.equals(systemUserId);
         } catch (SecurityException e) {
             return true; // No authenticated user = system operation
         }
+    }
+
+    /**
+     * Checks if current user is accessing their own resource
+     *
+     * @param resourceOwnerId ID of the resource owner
+     * @return true if current user is the resource owner
+     */
+    public static boolean isOwnResource(UUID resourceOwnerId) {
+        if (resourceOwnerId == null) {
+            return false;
+        }
+
+        try {
+            UUID currentUserId = getCurrentUserId();
+            return currentUserId.equals(resourceOwnerId);
+        } catch (SecurityException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Gets current user ID as string (for logging purposes)
+     *
+     * @return User ID as string or "ANONYMOUS" if not authenticated
+     */
+    public static String getCurrentUserIdAsString() {
+        try {
+            UUID userId = getCurrentUserId();
+            return userId.toString();
+        } catch (SecurityException e) {
+            return "ANONYMOUS";
+        }
+    }
+
+    /**
+     * Checks if the current user has supervisor level access
+     *
+     * @return true if user is supervisor, admin, or higher
+     */
+    public static boolean hasSupervisorAccess() {
+        return hasAnyRole("SUPERVISOR", "ADMIN", "SUPER_ADMIN");
+    }
+
+    /**
+     * Checks if the current user has admin level access
+     *
+     * @return true if user is admin or higher
+     */
+    public static boolean hasAdminAccess() {
+        return hasAnyRole("ADMIN", "SUPER_ADMIN");
     }
 }

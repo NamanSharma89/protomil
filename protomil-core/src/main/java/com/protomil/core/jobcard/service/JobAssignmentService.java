@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -126,14 +127,14 @@ public class JobAssignmentService {
 
     @LogExecutionTime
     @Transactional(readOnly = true)
-    public List<JobCardAssignment> getActiveAssignmentsByUser(Long userId) {
+    public List<JobCardAssignment> getActiveAssignmentsByUser(UUID userId) {
         log.debug("Retrieving active assignments for user: {}", userId);
         return assignmentRepository.findByAssignedToAndIsActiveTrueOrderByAssignedAtDesc(userId);
     }
 
     @LogExecutionTime
     @Transactional(readOnly = true)
-    public Long getActiveAssignmentCountByUser(Long userId) {
+    public Long getActiveAssignmentCountByUser(UUID userId) {
         log.debug("Counting active assignments for user: {}", userId);
         return assignmentRepository.countActiveAssignmentsByUser(userId);
     }

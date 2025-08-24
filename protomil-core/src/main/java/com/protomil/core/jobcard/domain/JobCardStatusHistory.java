@@ -11,6 +11,7 @@ import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 @Entity
 @Table(name = "job_card_status_history", indexes = {
@@ -42,7 +43,7 @@ public class JobCardStatusHistory {
     private JobStatus toStatus;
 
     @Column(name = "changed_by", nullable = false)
-    private Long changedBy;
+    private UUID changedBy;
 
     @Column(name = "change_reason", columnDefinition = "TEXT")
     private String changeReason;

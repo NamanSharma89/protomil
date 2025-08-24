@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "job_card_attachments", indexes = {
@@ -52,7 +53,7 @@ public class JobCardAttachment {
     private String description;
 
     @Column(name = "uploaded_by", nullable = false)
-    private Long uploadedBy;
+    private UUID uploadedBy;
 
     @Column(name = "uploaded_at")
     @Builder.Default

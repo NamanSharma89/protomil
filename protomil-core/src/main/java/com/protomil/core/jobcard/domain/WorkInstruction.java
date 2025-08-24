@@ -12,6 +12,7 @@ import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "work_instructions",
@@ -72,7 +73,7 @@ public class WorkInstruction {
     private LocalDateTime completedAt;
 
     @Column(name = "completed_by")
-    private Long completedBy;
+    private UUID completedBy;
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;

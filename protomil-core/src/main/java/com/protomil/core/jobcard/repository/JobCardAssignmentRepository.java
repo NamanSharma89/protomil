@@ -9,18 +9,19 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public interface JobCardAssignmentRepository extends JpaRepository<JobCardAssignment, Long> {
 
     List<JobCardAssignment> findByJobCardIdOrderByAssignedAtDesc(Long jobCardId);
 
-    List<JobCardAssignment> findByAssignedToAndIsActiveTrueOrderByAssignedAtDesc(Long assignedTo);
+    List<JobCardAssignment> findByAssignedToAndIsActiveTrueOrderByAssignedAtDesc(UUID assignedTo);
 
     Optional<JobCardAssignment> findByJobCardIdAndIsActiveTrue(Long jobCardId);
 
-    List<JobCardAssignment> findByAssignedByAndAssignedAtBetween(Long assignedBy, LocalDateTime startDate, LocalDateTime endDate);
+    List<JobCardAssignment> findByAssignedByAndAssignedAtBetween(UUID assignedBy, LocalDateTime startDate, LocalDateTime endDate);
 
     @Query("SELECT COUNT(jca) FROM JobCardAssignment jca WHERE jca.assignedTo = :userId AND jca.isActive = true")
-    Long countActiveAssignmentsByUser(@Param("userId") Long userId);
+    Long countActiveAssignmentsByUser(@Param("userId") UUID userId);
 }

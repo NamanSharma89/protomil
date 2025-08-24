@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "job_card_comments", indexes = {
@@ -40,7 +41,7 @@ public class JobCardComment {
     private CommentType commentType = CommentType.GENERAL;
 
     @Column(name = "created_by", nullable = false)
-    private Long createdBy;
+    private UUID createdBy;
 
     @Column(name = "created_at")
     @Builder.Default

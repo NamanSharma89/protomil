@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Entity
 @Table(name = "job_cards", indexes = {
@@ -63,10 +64,10 @@ public class JobCard extends AuditableEntity {
     private Priority priority = Priority.MEDIUM;
 
     @Column(name = "created_by", nullable = false)
-    private Long createdBy;
+    private UUID createdBy;
 
     @Column(name = "assigned_to")
-    private Long assignedTo;
+    private UUID assignedTo;
 
     @Column(name = "estimated_duration_minutes")
     private Integer estimatedDurationMinutes;
@@ -90,7 +91,7 @@ public class JobCard extends AuditableEntity {
 
     @Column(name = "version")
     @Builder.Default
-    private Integer version = 1;
+    private Long version = 1L;
 
     // Relationships
     @OneToMany(mappedBy = "jobCard", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
