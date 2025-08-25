@@ -1,5 +1,6 @@
 package com.protomil.core.jobcard.controller;
 
+import com.protomil.core.jobcard.dto.JobCardSummary;
 import com.protomil.core.jobcard.dto.JobCardTemplateResponse;
 import com.protomil.core.jobcard.dto.TemplateFieldDefinitionDto;
 import com.protomil.core.jobcard.service.JobCardTemplateService;
@@ -81,7 +82,11 @@ public class JobCardTemplateController {
         Page<JobCardTemplateResponse> response = templateService.getTemplates(category, pageable);
 
         return ResponseEntity.ok(
-                ApiResponse.success(response, "Templates retrieved successfully")
+                ApiResponse.<Page<JobCardTemplateResponse>>builder()
+                        .success(true)
+                        .message("Categories retrieved successfully")
+                        .data(response)
+                        .build()
         );
     }
 
@@ -117,7 +122,11 @@ public class JobCardTemplateController {
         JobCardTemplateResponse response = templateService.getTemplateById(templateId);
 
         return ResponseEntity.ok(
-                ApiResponse.success(response, "Template retrieved successfully")
+                ApiResponse.<JobCardTemplateResponse>builder()
+                        .success(true)
+                        .message("Categories retrieved successfully")
+                        .data(response)
+                        .build()
         );
     }
 
@@ -153,7 +162,11 @@ public class JobCardTemplateController {
         List<TemplateFieldDefinitionDto> response = templateService.getTemplateFields(templateId);
 
         return ResponseEntity.ok(
-                ApiResponse.success(response, "Field definitions retrieved successfully")
+                ApiResponse.<List<TemplateFieldDefinitionDto>>builder()
+                        .success(true)
+                        .message("Categories retrieved successfully")
+                        .data(response)
+                        .build()
         );
     }
 
@@ -181,7 +194,11 @@ public class JobCardTemplateController {
         List<String> response = templateService.getAllCategories();
 
         return ResponseEntity.ok(
-                ApiResponse.success(response, "Categories retrieved successfully")
+                ApiResponse.<List<String>>builder()
+                        .success(true)
+                        .message("Categories retrieved successfully")
+                        .data(response)
+                        .build()
         );
     }
 
@@ -221,7 +238,11 @@ public class JobCardTemplateController {
         Page<JobCardTemplateResponse> response = templateService.searchTemplates(q, pageable);
 
         return ResponseEntity.ok(
-                ApiResponse.success(response, "Template search completed successfully")
+                ApiResponse.<Page<JobCardTemplateResponse>>builder()
+                        .success(true)
+                        .message("Template search completed successfully")
+                        .data(response)
+                        .build()
         );
     }
 }

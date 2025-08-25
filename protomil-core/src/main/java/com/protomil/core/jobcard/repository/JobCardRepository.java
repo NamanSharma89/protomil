@@ -14,6 +14,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public interface JobCardRepository extends JpaRepository<JobCard, Long>, JpaSpecificationExecutor<JobCard> {
@@ -31,11 +32,11 @@ public interface JobCardRepository extends JpaRepository<JobCard, Long>, JpaSpec
     Page<JobCard> findByStatus(JobStatus status, Pageable pageable);
 
     // Assignment queries
-    List<JobCard> findByAssignedTo(Long assignedTo);
+    List<JobCard> findByAssignedTo(UUID assignedTo);
 
-    Page<JobCard> findByAssignedTo(Long assignedTo, Pageable pageable);
+    Page<JobCard> findByAssignedTo(UUID assignedTo, Pageable pageable);
 
-    List<JobCard> findByCreatedBy(Long createdBy);
+    List<JobCard> findByCreatedBy(UUID createdBy);
 
     // Priority and date queries
     List<JobCard> findByPriorityOrderByCreatedAtDesc(Priority priority);
@@ -63,7 +64,7 @@ public interface JobCardRepository extends JpaRepository<JobCard, Long>, JpaSpec
 
     // Dashboard queries
     @Query("SELECT jc FROM JobCard jc WHERE jc.assignedTo = :userId AND jc.status IN ('ASSIGNED', 'IN_PROGRESS')")
-    List<JobCard> findActiveJobCardsByUser(@Param("userId") Long userId);
+    List<JobCard> findActiveJobCardsByUser(@Param("userId") UUID userId);
 
     @Query("SELECT jc FROM JobCard jc WHERE jc.createdBy = :supervisorId AND jc.status = :status")
     List<JobCard> findJobCardsBySupervisorAndStatus(@Param("supervisorId") Long supervisorId, @Param("status") JobStatus status);

@@ -32,6 +32,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -152,7 +153,7 @@ public class JobCardServiceImpl implements JobCardService {
     @Override
     @LogExecutionTime
     @Transactional(readOnly = true)
-    public Page<JobCardSummary> getJobCards(JobStatus status, Long assignedTo, Long createdBy, Pageable pageable) {
+    public Page<JobCardSummary> getJobCards(JobStatus status, UUID assignedTo, UUID createdBy, Pageable pageable) {
         log.debug("Retrieving job cards with filters - status: {}, assignedTo: {}, createdBy: {}",
                 status, assignedTo, createdBy);
 
@@ -194,7 +195,7 @@ public class JobCardServiceImpl implements JobCardService {
     @Override
     @LogExecutionTime
     @Transactional(readOnly = true)
-    public List<JobCardSummary> getActiveJobCardsByUser(Long userId) {
+    public List<JobCardSummary> getActiveJobCardsByUser(UUID userId) {
         log.debug("Retrieving active job cards for user: {}", userId);
 
         List<JobCard> jobCards = jobCardRepository.findActiveJobCardsByUser(userId);

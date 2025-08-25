@@ -9,6 +9,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class JobCardSpecifications {
 
@@ -47,7 +48,7 @@ public class JobCardSpecifications {
         };
     }
 
-    public static Specification<JobCard> hasStatusAndAssignedTo(JobStatus status, Long assignedTo) {
+    public static Specification<JobCard> hasStatusAndAssignedTo(JobStatus status, UUID assignedTo) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 

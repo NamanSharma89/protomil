@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -53,7 +54,7 @@ public class WorkInstructionDto {
     private LocalDateTime completedAt;
 
     @Schema(description = "Completed by user ID")
-    private Long completedBy;
+    private UUID completedBy; // Changed to UUID
 
     @Schema(description = "Completed by user name")
     private String completedByName;

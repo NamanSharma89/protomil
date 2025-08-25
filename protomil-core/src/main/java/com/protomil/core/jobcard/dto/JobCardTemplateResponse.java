@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -39,7 +40,7 @@ public class JobCardTemplateResponse {
     private Boolean isActive;
 
     @Schema(description = "Created by user ID", example = "123")
-    private Long createdBy;
+    private UUID createdBy;
 
     @Schema(description = "Created by user name", example = "John Supervisor")
     private String createdByName;

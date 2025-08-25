@@ -39,6 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/job-cards")
@@ -198,11 +199,11 @@ public class JobCardController {
 
             @RequestParam(required = false)
             @Parameter(description = "Filter by assigned user ID")
-            Long assignedTo,
+            UUID assignedTo,
 
             @RequestParam(required = false)
             @Parameter(description = "Filter by creator user ID")
-            Long createdBy,
+            UUID createdBy,
 
             @RequestParam(defaultValue = "0")
             @Parameter(description = "Page number (0-based)", example = "0")
@@ -707,7 +708,7 @@ public class JobCardController {
     public ResponseEntity<ApiResponse<List<JobCardSummary>>> getActiveJobCardsByUser(
             @PathVariable
             @Parameter(description = "User ID to get active jobs for", example = "123")
-            Long userId) {
+            UUID userId) {
 
         log.debug("Retrieving active job cards for user: {}", userId);
 

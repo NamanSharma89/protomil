@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public interface JobCardService {
 
@@ -29,13 +30,13 @@ public interface JobCardService {
     JobCardResponse getJobCardByJobNumber(String jobNumber);
 
     @LogExecutionTime
-    Page<JobCardSummary> getJobCards(JobStatus status, Long assignedTo, Long createdBy, Pageable pageable);
+    Page<JobCardSummary> getJobCards(JobStatus status, UUID assignedTo, UUID createdBy, Pageable pageable);
 
     @LogExecutionTime
     Page<JobCardSummary> searchJobCards(String searchTerm, Pageable pageable);
 
     @LogExecutionTime
-    List<JobCardSummary> getActiveJobCardsByUser(Long userId);
+    List<JobCardSummary> getActiveJobCardsByUser(UUID userId);
 
     @LogExecutionTime
     List<JobCardSummary> getOverdueJobCards();

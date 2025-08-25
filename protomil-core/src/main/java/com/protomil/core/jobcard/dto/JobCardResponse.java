@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -21,7 +22,7 @@ import java.util.Map;
 public class JobCardResponse {
 
     @Schema(description = "Job card ID", example = "1")
-    private Long id;
+    private Long id; // Keep as Long for database ID
 
     @Schema(description = "Unique job number", example = "JC-2025-001")
     private String jobNumber;
@@ -89,9 +90,9 @@ public class JobCardResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class AssignmentInfo {
-        private Long assignedTo;
+        private UUID assignedTo; // Changed to UUID
         private String assignedToName;
-        private Long assignedBy;
+        private UUID assignedBy; // Changed to UUID
         private String assignedByName;
         private LocalDateTime assignedAt;
         private MachineInfo machine;
@@ -152,6 +153,7 @@ public class JobCardResponse {
         private Long id;
         private String commentText;
         private String commentType;
+        private UUID createdBy; // Changed to UUID
         private String createdByName;
         private LocalDateTime createdAt;
         private Boolean isInternal;

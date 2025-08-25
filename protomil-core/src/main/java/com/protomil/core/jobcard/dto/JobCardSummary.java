@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -40,13 +41,13 @@ public class JobCardSummary {
     private String templateCategory;
 
     @Schema(description = "Assigned user ID")
-    private Long assignedTo;
+    private UUID assignedTo; // Changed to UUID
 
     @Schema(description = "Assigned user name")
     private String assignedToName;
 
     @Schema(description = "Created by user ID")
-    private Long createdBy;
+    private UUID createdBy; // Changed to UUID
 
     @Schema(description = "Created by user name")
     private String createdByName;

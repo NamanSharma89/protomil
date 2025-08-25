@@ -18,8 +18,8 @@ import java.util.UUID;
 public class JobAssignmentRequest {
 
     @NotNull(message = "Assigned user ID is required")
-    @Schema(description = "User ID to assign the job card to", example = "123")
-    private UUID assignedTo;
+    @Schema(description = "User ID to assign the job card to", example = "123e4567-e89b-12d3-a456-426614174000")
+    private UUID assignedTo; // Changed to UUID
 
     @Schema(description = "Machine ID to assign (optional)", example = "456")
     private Long machineId;
