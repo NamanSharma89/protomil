@@ -1,0 +1,39 @@
+sequenceDiagram
+    participant S as Supervisor
+    participant UI as Assignment UI
+    participant JAC as JobAssignmentController
+    participant JAS as JobAssignmentService
+    participant JCR as JobCardRepository
+    participant MR as MachineRepository
+    participant JAR as JobCardAssignmentRepository
+    participant EP as EventPublisher
+
+S->>UI: Select job card and assign to user/machine
+UI->>JAC: POST /api/v1/jobcards/{id}/assign
+JAC->>JAS: assignJobCard(JobCardAssignmentRequest)
+
+JAS->>JCR: findById(jobCardId)
+JCR-->>JAS: JobCard
+
+alt Job cannot be assigned
+JAS-->>JAC: BusinessException("Invalid status")
+else Job can be assigned
+JAS->>MR: findById(machineId)
+MR-->>JAS: Machine
+
+alt Machine not available
+JAS-->>JAC: BusinessException("Machine unavailable")
+else Machine available
+JAS->>JAS: Create JobCardAssignment
+JAS->>JAR: save(assignment)
+
+JAS->>JCR: Update jobCard.assignedTo and status=ASSIGNED
+JCR-->>JAS: Updated JobCard
+
+JAS->>EP: publishEvent(JobCardAssignedEvent)
+JAS-->>JAC: JobCardResponse
+
+JAC-->>UI: Assignment successful
+UI-->>S: Show confirmation
+end
+end

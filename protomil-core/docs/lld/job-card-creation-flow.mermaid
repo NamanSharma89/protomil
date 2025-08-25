@@ -1,0 +1,38 @@
+sequenceDiagram
+    participant U as User
+    participant UI as Job Card UI
+    participant JC as JobCardController
+    participant JS as JobCardService
+    participant JTR as JobCardTemplateRepository
+    participant JCR as JobCardRepository
+    participant JNS as JobNumberService
+    participant EP as EventPublisher
+    participant DB as Database
+
+    U->>UI: Select template and fill details
+    UI->>JC: POST /api/v1/jobcards
+    JC->>JS: createJobCard(JobCardCreateRequest)
+
+    JS->>JTR: findById(templateId)
+    JTR-->>JS: JobCardTemplate
+
+    alt Template not active
+        JS-->>JC: BusinessException("Template inactive")
+    else Template active
+        JS->>JNS: generateJobNumber(category)
+        JNS-->>JS: Unique job number
+
+        JS->>JS: Build JobCard entity
+        Note over JS: Set status=DRAFT, created_by=current_user
+
+        JS->>JCR: save(jobCard)
+        JCR->>DB: INSERT job_card
+        DB-->>JCR: Saved JobCard
+        JCR-->>JS: JobCard with ID
+
+        JS->>EP: publishEvent(JobCardCreatedEvent)
+        JS-->>JC: JobCardResponse
+
+        JC-->>UI: 201 Created with job card details
+        UI-->>U: Show success message
+    end

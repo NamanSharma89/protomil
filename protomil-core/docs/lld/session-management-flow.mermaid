@@ -1,0 +1,35 @@
+sequenceDiagram
+    participant U as User
+    participant UI as UI Layer
+    participant SM as SessionManager
+    participant RS as RoleService
+    participant US as UserService
+    participant Cache as Session Cache
+
+    Note over SM: Scheduled cleanup every 30 minutes
+    SM->>SM: cleanupExpiredSessions()
+    SM->>Cache: Remove expired sessions
+
+    U->>UI: Perform action requiring fresh user data
+    UI->>SM: getCurrentUserClaims(userId)
+    SM->>Cache: Get session from activeSessions
+
+    alt Session exists and active
+        SM->>SM: Update lastAccessedAt
+        SM->>RS: getUserRoleNames(userId)
+        RS-->>SM: Current roles
+
+        alt Roles changed
+            SM->>SM: Update session with new roles
+        end
+        SM-->>UI: UserTokenClaims
+    else Session expired/missing
+        SM->>US: getUserById(userId)
+        US-->>SM: UserResponse
+        SM->>RS: getUserRoleNames(userId)
+        RS-->>SM: User roles
+
+        SM->>SM: Create fresh UserTokenClaims
+        SM->>SM: createSession(userId, claims)
+        SM-->>UI: Fresh UserTokenClaims
+    end

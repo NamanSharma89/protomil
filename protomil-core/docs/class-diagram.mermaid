@@ -1,0 +1,523 @@
+classDiagram
+%% Base Entity Hierarchy
+    class BaseEntity {
+        <<abstract>>
+        -Long version
+        +getVersion() Long
+        +setVersion(Long)
+    }
+
+    class AuditableEntity {
+        <<abstract>>
+        -LocalDateTime createdAt
+        -LocalDateTime updatedAt
+        -UUID createdBy
+        -UUID updatedBy
+    }
+
+    BaseEntity <|-- AuditableEntity
+
+%% Core User Domain Entities
+    class User {
+        -UUID id
+        -String cognitoUserSub
+        -String email
+        -String firstName
+        -String lastName
+        -UserStatus status
+        -String employeeId
+        -String department
+        -String phoneNumber
+        -String awsIamRoleArn
+        -LocalDateTime lastLoginAt
+        -List~UserRole~ userRoles
+    }
+
+    class Role {
+        -UUID id
+        -String name
+        -String description
+        -String awsIamRoleArn
+        -String awsPolicyArn
+        -RoleStatus status
+        -List~UserRole~ userRoles
+        -List~RolePermission~ rolePermissions
+    }
+
+    class Permission {
+        -UUID id
+        -String name
+        -String description
+        -ResourceType resourceType
+        -String action
+        -PermissionStatus status
+        -List~RolePermission~ rolePermissions
+    }
+
+    class UserRole {
+        -UUID id
+        -User user
+        -Role role
+        -UUID assignedBy
+        -LocalDateTime assignedAt
+        -LocalDateTime expiresAt
+        -UserRoleStatus status
+    }
+
+    class RolePermission {
+        -UUID id
+        -Role role
+        -Permission permission
+        -RolePermissionStatus status
+    }
+
+    class UserRejection {
+        -UUID id
+        -User user
+        -User rejectedBy
+        -String rejectionReason
+        -LocalDateTime rejectedAt
+        -UserStatus originalStatus
+    }
+
+%% Job Card Domain Entities
+    class JobCard {
+        -Long id
+        -String jobNumber
+        -JobCardTemplate template
+        -String title
+        -String description
+        -JobStatus status
+        -Priority priority
+        -UUID createdBy
+        -UUID assignedTo
+        -Integer estimatedDurationMinutes
+        -Integer actualDurationMinutes
+        -LocalDateTime targetCompletionDate
+        -LocalDateTime startedAt
+        -LocalDateTime completedAt
+        -Map~String,Object~ dynamicFields
+        -Long version
+        -List~WorkInstruction~ workInstructions
+        -List~JobCardAttachment~ attachments
+        -List~JobCardAssignment~ assignments
+        -List~JobCardStatusHistory~ statusHistory
+        -List~JobCardComment~ comments
+        -List~ProductionMaster~ productionRecords
+        +isInProgress() boolean
+        +isCompleted() boolean
+        +canBeAssigned() boolean
+        +canBeStarted() boolean
+        +addWorkInstruction(WorkInstruction)
+        +addComment(JobCardComment)
+    }
+
+    class JobCardTemplate {
+        -Long id
+        -String templateName
+        -String templateCode
+        -String description
+        -String category
+        -Boolean isActive
+        -Integer estimatedDurationMinutes
+        -List~TemplateFieldDefinition~ fieldDefinitions
+        -List~JobCard~ jobCards
+    }
+
+    class WorkInstruction {
+        -Long id
+        -JobCard jobCard
+        -Integer stepNumber
+        -String title
+        -String description
+        -InstructionType instructionType
+        -String content
+        -List~String~ attachments
+        -Boolean isQualityCheckpoint
+        -Integer estimatedDurationMinutes
+        -Integer actualDurationMinutes
+        -LocalDateTime completedAt
+        -UUID completedBy
+        -String notes
+        -LocalDateTime createdAt
+        -LocalDateTime updatedAt
+        +isCompleted() boolean
+        +isQualityStep() boolean
+    }
+
+    class JobCardAttachment {
+        -Long id
+        -JobCard jobCard
+        -WorkInstruction workInstruction
+        -String fileName
+        -String fileType
+        -Long fileSizeBytes
+        -String filePath
+        -String uploadedBy
+        -LocalDateTime uploadedAt
+    }
+
+    class JobCardAssignment {
+        -Long id
+        -JobCard jobCard
+        -UUID assignedTo
+        -UUID assignedBy
+        -LocalDateTime assignedAt
+        -LocalDateTime unassignedAt
+        -String unassignReason
+        -Boolean isActive
+        -Machine machine
+        +isCurrentlyActive() boolean
+        +unassign(String reason)
+    }
+
+    class JobCardStatusHistory {
+        -Long id
+        -JobCard jobCard
+        -JobStatus fromStatus
+        -JobStatus toStatus
+        -UUID changedBy
+        -LocalDateTime changedAt
+        -String reason
+        -String notes
+    }
+
+    class JobCardComment {
+        -Long id
+        -JobCard jobCard
+        -UUID commentedBy
+        -String content
+        -CommentType commentType
+        -LocalDateTime commentedAt
+        -UUID parentCommentId
+    }
+
+    class ProductionMaster {
+        -Long id
+        -JobCard jobCard
+        -Integer producedQuantity
+        -Integer acceptedQuantity
+        -Integer rejectedQuantity
+        -Integer reworkQuantity
+        -LocalDateTime productionDate
+        -UUID recordedBy
+        -Boolean isValidated
+        +getTotalProduced() Integer
+        +getRejectionRate() Double
+        +isValidated() boolean
+    }
+
+    class Machine {
+        -Long id
+        -String machineCode
+        -String machineName
+        -String sectionCode
+        -String sectionName
+        -String machineType
+        -Integer capacityPerHour
+        -MachineStatus status
+        -Boolean isActive
+        -LocalDateTime createdAt
+        -LocalDateTime updatedAt
+        -List~JobCardAssignment~ jobCardAssignments
+        +isAvailable() boolean
+        +isUnderMaintenance() boolean
+    }
+
+    class TemplateFieldDefinition {
+        -Long id
+        -JobCardTemplate template
+        -String fieldName
+        -String fieldLabel
+        -FieldType fieldType
+        -Boolean isRequired
+        -String defaultValue
+        -String validationRegex
+        -String options
+        -Integer displayOrder
+        -String helpText
+    }
+
+%% Extend from AuditableEntity
+    AuditableEntity <|-- User
+    AuditableEntity <|-- Role
+    AuditableEntity <|-- Permission
+    AuditableEntity <|-- UserRole
+    AuditableEntity <|-- RolePermission
+    AuditableEntity <|-- UserRejection
+    AuditableEntity <|-- JobCard
+    AuditableEntity <|-- JobCardTemplate
+
+%% User Domain Relationships
+    User "1" --o "0..*" UserRole : has
+    Role "1" --o "0..*" UserRole : assigned_to
+    Role "1" --o "0..*" RolePermission : has
+    Permission "1" --o "0..*" RolePermission : granted_by
+    User "1" --o "0..*" UserRejection : can_be_rejected
+    User "1" --o "0..*" UserRejection : can_reject
+
+%% Job Card Domain Relationships
+    JobCard "1" --o "0..*" WorkInstruction : contains
+    JobCard "1" --o "0..*" JobCardAttachment : has
+    JobCard "1" --o "0..*" JobCardAssignment : assigned_through
+    JobCard "1" --o "0..*" JobCardStatusHistory : tracks_changes
+    JobCard "1" --o "0..*" JobCardComment : has
+    JobCard "1" --o "0..*" ProductionMaster : records_production
+    JobCardTemplate "1" --o "0..*" JobCard : creates
+    JobCardTemplate "1" --o "0..*" TemplateFieldDefinition : defines_fields
+    WorkInstruction "1" --o "0..*" JobCardAttachment : can_have
+    Machine "1" --o "0..*" JobCardAssignment : used_in
+    User "1" --o "0..*" JobCard : creates
+    User "1" --o "0..*" JobCard : assigned_to
+
+%% Enums
+    class UserStatus {
+        <<enumeration>>
+        PENDING_VERIFICATION
+        PENDING_APPROVAL
+        ACTIVE
+        INACTIVE
+        SUSPENDED
+        DELETED
+        REJECTED
+        COGNITO_SYNC_FAILURE
+    }
+
+    class JobStatus {
+        <<enumeration>>
+        DRAFT
+        READY
+        ASSIGNED
+        IN_PROGRESS
+        PENDING_REVIEW
+        COMPLETED
+        CANCELLED
+        REWORK_REQUIRED
+        +getDisplayName() String
+        +getDescription() String
+        +getColorCode() String
+        +isActiveStatus() boolean
+        +isFinalStatus() boolean
+        +canTransitionTo(JobStatus) boolean
+    }
+
+    class Priority {
+        <<enumeration>>
+        LOW
+        MEDIUM
+        HIGH
+        CRITICAL
+        +getWeight() int
+    }
+
+    class InstructionType {
+        <<enumeration>>
+        TEXT
+        IMAGE
+        VIDEO
+        CHECKLIST
+        FORM
+        ATTACHMENT
+    }
+
+    class CommentType {
+        <<enumeration>>
+        GENERAL
+        QUALITY
+        ISSUE
+        INSTRUCTION
+        APPROVAL
+        PROGRESS
+        +isHighPriority() boolean
+        +requiresAttention() boolean
+    }
+
+    class FieldType {
+        <<enumeration>>
+        TEXT
+        NUMBER
+        DATE
+        DATETIME
+        DROPDOWN
+        CHECKBOX
+        TEXTAREA
+        EMAIL
+        PHONE
+        URL
+    }
+
+    class MachineStatus {
+        <<enumeration>>
+        ACTIVE
+        MAINTENANCE
+        INACTIVE
+        OUT_OF_ORDER
+    }
+
+    class ResourceType {
+        <<enumeration>>
+        JOB_CARD
+        PERSONNEL
+        EQUIPMENT
+        WORKFLOW
+        REPORTING
+        USER_MANAGEMENT
+        SYSTEM_ADMIN
+    }
+
+%% Service Layer
+    class UserService {
+        -UserRepository userRepository
+        -RoleRepository roleRepository
+        -UserRoleRepository userRoleRepository
+        +approveUser(UUID, UserApprovalRequest, Authentication) UserResponse
+        +getUserById(UUID) UserResponse
+        +getAllUsers(Pageable) Page~UserResponse~
+        +suspendUser(UUID, String, Authentication) UserResponse
+        +assignRoleToUser(UUID, UUID, Authentication)
+    }
+
+    class RoleService {
+        -UserRoleRepository userRoleRepository
+        -RoleRepository roleRepository
+        -UserRepository userRepository
+        +getUserRoleNames(UUID) List~String~
+        +hasRole(UUID, String) boolean
+        +hasPermission(UUID, String, String) boolean
+    }
+
+    class JobCardService {
+        <<interface>>
+        +createJobCard(JobCardCreateRequest) JobCardResponse
+        +updateJobCard(Long, JobCardUpdateRequest) JobCardResponse
+        +getJobCardById(Long) JobCardResponse
+        +assignJobCard(Long, JobCardAssignmentRequest) JobCardResponse
+        +startJobCard(Long) JobCardResponse
+        +completeJobCard(Long, JobCardCompletionRequest) JobCardResponse
+        +cancelJobCard(Long, String) JobCardResponse
+        +getJobCardStatusCounts() Map~JobStatus,Long~
+    }
+
+    class JobCardServiceImpl {
+        -JobCardRepository jobCardRepository
+        -JobCardTemplateRepository templateRepository
+        -JobCardMapper jobCardMapper
+        -ApplicationEventPublisher eventPublisher
+        +createJobCard(JobCardCreateRequest) JobCardResponse
+        +updateJobCard(Long, JobCardUpdateRequest) JobCardResponse
+        +getJobCardById(Long) JobCardResponse
+        +assignJobCard(Long, JobCardAssignmentRequest) JobCardResponse
+    }
+
+    class JobCardTemplateService {
+        -JobCardTemplateRepository templateRepository
+        -TemplateFieldDefinitionRepository fieldDefinitionRepository
+        +getActiveTemplates(Pageable) Page~JobCardTemplateResponse~
+        +createTemplate(JobCardTemplateCreateRequest) JobCardTemplateResponse
+        +updateTemplate(Long, JobCardTemplateUpdateRequest) JobCardTemplateResponse
+        +getTemplateStatistics(Long) TemplateStatistics
+    }
+
+    class AuthenticationService {
+        -UserRepository userRepository
+        -RoleService roleService
+        -JwtTokenManager jwtTokenManager
+        -SessionManager sessionManager
+        +authenticateUser(LoginRequest) LoginResponse
+        +refreshToken(String) TokenPair
+    }
+
+    class SessionManager {
+        -Map~UUID,UserSessionInfo~ activeSessions
+        -RoleService roleService
+        -UserService userService
+        +createSession(UUID, UserTokenClaims)
+        +getCurrentUserClaims(UUID) UserTokenClaims
+        +invalidateSession(UUID)
+        +cleanupExpiredSessions()
+    }
+
+%% Repository Layer
+    class UserRepository {
+        <<interface>>
+        +findByEmail(String) Optional~User~
+        +findByCognitoUserSub(String) Optional~User~
+        +existsByEmail(String) boolean
+        +findByStatus(UserStatus, Pageable) Page~User~
+    }
+
+    class JobCardRepository {
+        <<interface>>
+        +findByJobNumber(String) Optional~JobCard~
+        +findByIdWithDetails(Long) Optional~JobCard~
+        +findByStatus(JobStatus, Pageable) Page~JobCard~
+        +findByAssignedToAndStatus(UUID, JobStatus) List~JobCard~
+        +findByTemplateId(Long) List~JobCard~
+        +countByStatus(JobStatus) Long
+    }
+
+    class JobCardTemplateRepository {
+        <<interface>>
+        +findByIsActiveTrueOrderByTemplateNameAsc(Pageable) Page~JobCardTemplate~
+        +findByCategory(String, Pageable) Page~JobCardTemplate~
+        +findByIdWithFieldDefinitions(Long) Optional~JobCardTemplate~
+        +findDistinctActiveCategories() List~String~
+    }
+
+%% Service Implementation Relationships
+    JobCardService <|.. JobCardServiceImpl
+    UserService --> UserRepository
+    RoleService --> UserRoleRepository
+    JobCardServiceImpl --> JobCardRepository
+    JobCardServiceImpl --> JobCardTemplateRepository
+    JobCardTemplateService --> JobCardTemplateRepository
+    AuthenticationService --> UserService
+    AuthenticationService --> RoleService
+    SessionManager --> RoleService
+
+%% Repository Dependencies
+    UserRepository --> User
+    JobCardRepository --> JobCard
+    JobCardTemplateRepository --> JobCardTemplate
+
+%% Exception Hierarchy
+    class BaseException {
+        <<abstract>>
+        -HttpStatus httpStatus
+        -String errorCode
+        -LocalDateTime timestamp
+        -Map~String,Object~ details
+        +addDetail(String, Object) T
+    }
+
+    class BusinessException
+    class ResourceNotFoundException
+    class JobCardNotFoundException
+    class TemplateNotFoundException
+
+    BaseException <|-- BusinessException
+    BaseException <|-- ResourceNotFoundException
+    ResourceNotFoundException <|-- JobCardNotFoundException
+    ResourceNotFoundException <|-- TemplateNotFoundException
+
+%% Shared DTOs
+    class ApiResponse~T~ {
+        -boolean success
+        -String message
+        -T data
+        -LocalDateTime timestamp
+        -String traceId
+        -ErrorResponse error
+        +success(T) ApiResponse~T~
+        +error(ErrorResponse) ApiResponse~T~
+    }
+
+    class ErrorResponse {
+        -String errorCode
+        -String message
+        -Integer status
+        -LocalDateTime timestamp
+        -String path
+        -String traceId
+        -Map~String,List~String~~ fieldErrors
+    }

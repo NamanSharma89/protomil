@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant U as User
+    participant UI as UI Layer
+    participant C as Controller
+    participant S as Service
+    participant GEH as GlobalExceptionHandler
+    participant ELS as ErrorLoggingService
+
+    U->>UI: Perform action
+    UI->>C: API Request
+    C->>S: Service call
+
+    S-->>C: BusinessException thrown
+    C-->>GEH: Exception bubbles up
+
+    GEH->>GEH: Generate trace ID
+    GEH->>ELS: logError(errorDetails, request)
+    ELS->>ELS: Set MDC context
+    ELS->>ELS: Log with appropriate level
+
+    GEH->>GEH: Build ErrorResponse
+    Note over GEH: Include suggestions, field errors
+
+    GEH->>GEH: Wrap in ApiResponse
+    GEH-->>UI: HTTP error response with details
+
+    UI->>UI: Parse error response
+    UI-->>U: Show user-friendly error message

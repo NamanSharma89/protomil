@@ -1,0 +1,45 @@
+sequenceDiagram
+    participant U as User
+    participant UI as Login UI
+    participant AC as AuthController
+    participant AS as AuthService
+    participant C as Cognito
+    participant UR as UserRepository
+    participant RS as RoleService
+    participant JWT as JWTManager
+    participant SM as SessionManager
+    participant CM as CookieManager
+
+    U->>UI: Enter credentials
+    UI->>AC: POST /wireframes/login
+    AC->>AS: authenticateUser(LoginRequest)
+
+    AS->>C: adminInitiateAuth(email, password)
+    C-->>AS: CognitoAuthResult + tokens
+
+    AS->>UR: findByEmail(email)
+    UR-->>AS: User entity
+
+    alt User not ACTIVE
+        AS-->>AC: BusinessException("User not active")
+        AC-->>UI: Show error message
+    else User ACTIVE
+        AS->>AS: syncUserStatusWithCognito()
+        AS->>RS: getUserRoleNames(userId)
+        RS->>UR: findActiveRolesByUserId()
+        UR-->>RS: List<UserRole>
+        RS-->>AS: List<String> roleNames
+
+        AS->>JWT: generateTokenPair(UserTokenClaims)
+        JWT-->>AS: TokenPair(access, refresh)
+
+        AS->>SM: createSession(userId, userClaims)
+        SM->>SM: Store in activeSessions Map
+
+        AS->>UR: updateLastLoginTime(user)
+        AS-->>AC: LoginResponse
+
+        AC->>CM: setAuthenticationCookies(response, tokens)
+        CM->>CM: Create HttpOnly secure cookies
+        AC-->>UI: Redirect to /wireframes/dashboard
+    end

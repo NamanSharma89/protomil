@@ -1,0 +1,34 @@
+sequenceDiagram
+    participant U as User
+    participant UI as Job Card UI
+    participant JCC as JobCardController
+    participant JCS as JobCardService
+    participant JCR as JobCardRepository
+    participant JSHR as JobCardStatusHistoryRepository
+    participant EP as EventPublisher
+
+    U->>UI: Request status change
+    UI->>JCC: PUT /api/v1/jobcards/{id}/status
+    JCC->>JCS: changeJobCardStatus(id, newStatus, reason)
+
+    JCS->>JCR: findById(jobCardId)
+    JCR-->>JCS: JobCard
+
+    JCS->>JCS: Validate status transition
+    Note over JCS: Check JobStatus.canTransitionTo()
+
+    alt Invalid transition
+        JCS-->>JCC: InvalidJobStatusTransitionException
+    else Valid transition
+        JCS->>JCS: Create status history record
+        JCS->>JSHR: save(statusHistory)
+
+        JCS->>JCS: Update jobCard.status
+        JCS->>JCR: save(jobCard)
+
+        JCS->>EP: publishEvent(JobCardStatusChangedEvent)
+        JCS-->>JCC: JobCardResponse
+
+        JCC-->>UI: Status updated successfully
+        UI-->>U: Show confirmation
+    end

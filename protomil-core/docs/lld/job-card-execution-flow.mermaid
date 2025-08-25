@@ -1,0 +1,60 @@
+sequenceDiagram
+    participant T as Technician
+    participant UI as Job Card UI
+    participant JCC as JobCardController
+    participant JCS as JobCardService
+    participant WIR as WorkInstructionRepository
+    participant JCR as JobCardRepository
+    participant PMR as ProductionMasterRepository
+    participant EP as EventPublisher
+
+    T->>UI: Start job card
+    UI->>JCC: PUT /api/v1/jobcards/{id}/start
+    JCC->>JCS: startJobCard(jobCardId)
+
+    JCS->>JCR: findById(jobCardId)
+    JCR-->>JCS: JobCard
+
+    alt Cannot start job
+        JCS-->>JCC: BusinessException("Cannot start")
+    else Can start job
+        JCS->>JCS: Update status=IN_PROGRESS, startedAt=now
+        JCS->>JCR: save(jobCard)
+        JCS->>EP: publishEvent(JobCardStartedEvent)
+        JCS-->>JCC: JobCardResponse
+    end
+
+    loop For each work instruction
+        T->>UI: Complete work instruction
+        UI->>JCC: PUT /api/v1/work-instructions/{id}/complete
+        JCC->>JCS: completeWorkInstruction(instructionId, notes)
+
+        JCS->>WIR: findById(instructionId)
+        WIR-->>JCS: WorkInstruction
+
+        JCS->>JCS: Set completedAt, completedBy, notes
+        JCS->>WIR: save(workInstruction)
+
+        JCS->>JCS: Check if all instructions completed
+        alt All instructions completed
+            JCS->>JCS: Update jobCard.status=PENDING_REVIEW
+            JCS->>JCR: save(jobCard)
+        end
+    end
+
+    T->>UI: Record production quantities
+    UI->>JCC: POST /api/v1/jobcards/{id}/production
+    JCC->>JCS: recordProduction(ProductionRequest)
+
+    JCS->>JCS: Create ProductionMaster record
+    JCS->>PMR: save(productionMaster)
+    JCS-->>JCC: Production recorded
+
+    T->>UI: Complete job card
+    UI->>JCC: PUT /api/v1/jobcards/{id}/complete
+    JCC->>JCS: completeJobCard(jobCardId, completion details)
+
+    JCS->>JCS: Update status=COMPLETED, completedAt=now
+    JCS->>JCR: save(jobCard)
+    JCS->>EP: publishEvent(JobCardCompletedEvent)
+    JCS-->>JCC: JobCardResponse

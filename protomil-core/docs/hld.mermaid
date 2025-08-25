@@ -1,46 +1,215 @@
-graph TB
+graph TD
     subgraph "Client Layer"
-        UI[Wireframe UI]
-        Login[Login Page]
-        Dashboard[Dashboard]
+        UI[Web UI - Thymeleaf + HTMX]
+        Login[Login/Registration Pages]
+        Dashboard[Role-based Dashboard]
+        JobCardUI[Job Card Management UI]
+        ReportsUI[Reports & Analytics UI]
+        AdminUI[Admin Management UI]
     end
 
-    subgraph "Application Layer"
-        AuthController[Auth Controller]
+    subgraph "API Gateway & Security"
+        Gateway[API Gateway/Load Balancer]
+        CSRF[CSRF Protection]
+        RateLimit[Rate Limiting]
+        CORS[CORS Handler]
+    end
+
+    subgraph "Controller Layer"
+        AuthController[Authentication Controller]
+        UserController[User Management Controller]
+        JobCardController[Job Card Controller]
+        JobAssignmentController[Job Assignment Controller]
+        ReportController[Reports Controller]
+        WireframeController[Wireframe Controller]
+    end
+
+    subgraph "Application Services"
         AuthService[Authentication Service]
-        RoleService[Role Service]
+        UserService[User Management Service]
+        RoleService[Role & Permission Service]
+        JobCardService[Job Card Service]
+        JobAssignmentService[Job Assignment Service]
+        JobTemplateService[Job Template Service]
+        DashboardService[Dashboard Service]
+        ReportingService[Reporting Service]
         SessionManager[Session Manager]
     end
 
-    subgraph "Security Layer"
-        JWTManager[JWT Manager]
-        CSRFProtection[CSRF Protection]
-        RateLimiter[Rate Limiter]
+    subgraph "Security & Token Management"
+        JWTManager[JWT Token Manager]
+        CookieManager[Cookie Manager]
+        SecurityConfig[Spring Security Config]
+        AuditingConfig[JPA Auditing]
+    end
+
+    subgraph "Event Processing"
+        EventPublisher[Application Event Publisher]
+        JobCardEvents[Job Card Events]
+        UserEvents[User Management Events]
+        EmailService[Email Notification Service]
+    end
+
+    subgraph "Data Access Layer"
+        UserRepo[User Repository]
+        RoleRepo[Role Repository]
+        JobCardRepo[Job Card Repository]
+        TemplateRepo[Template Repository]
+        AssignmentRepo[Assignment Repository]
+        ProductionRepo[Production Repository]
+        MachineRepo[Machine Repository]
+    end
+
+    subgraph "Caching Layer"
+        InMemoryCache[In-Memory Session Cache]
+        RedisCache[Redis Cache - Future]
+        UserSessionCache[User Session Store]
+    end
+
+    subgraph "Database Layer - PostgreSQL"
+        UserTables[(User Management<br/>users, roles, permissions)]
+        JobCardTables[(Job Card System<br/>job_cards, templates, assignments)]
+        AuditTables[(Audit & History<br/>status_history, comments)]
+        ProductionTables[(Production Data<br/>production_master, quality)]
+        ConfigTables[(Configuration<br/>machines, categories)]
     end
 
     subgraph "External Services"
-        Cognito[AWS Cognito]
-        Redis[Redis Cache<br/>Future]
+        Cognito[AWS Cognito<br/>Identity Provider]
+        SES[AWS SES<br/>Email Service]
+        S3[AWS S3<br/>File Storage]
+        Lambda[AWS Lambda<br/>Report Processing]
     end
 
-    subgraph "Data Layer"
-        UserDB[(User Database)]
-        RoleDB[(Role Database)]
-        SessionCache[Session Map<br/>In-Memory]
+    subgraph "Monitoring & Logging"
+        LoggingAspect[Logging Aspect - AOP]
+        RequestFilter[Request/Response Filter]
+        ErrorHandler[Global Exception Handler]
+        Metrics[Application Metrics]
+        HealthCheck[Health Check Endpoints]
     end
 
-    UI --> Login
-    Login --> AuthController
+    subgraph "Future NoSQL Implementation"
+        ElasticSearch[Elasticsearch<br/>Log Analytics]
+        InfluxDB[InfluxDB<br/>Time Series Metrics]
+        MongoDB[MongoDB<br/>Flexible Schemas]
+    end
+
+    %% Vertical Flow - Top to Bottom
+    UI --> Gateway
+    Login --> Gateway
+    Dashboard --> Gateway
+    JobCardUI --> Gateway
+    ReportsUI --> Gateway
+    AdminUI --> Gateway
+
+    Gateway --> CSRF
+    CSRF --> RateLimit
+    RateLimit --> CORS
+
+    CORS --> AuthController
+    CORS --> UserController
+    CORS --> JobCardController
+    CORS --> JobAssignmentController
+    CORS --> ReportController
+    CORS --> WireframeController
+
     AuthController --> AuthService
-    AuthService --> Cognito
-    AuthService --> UserDB
-    AuthService --> RoleService
-    RoleService --> RoleDB
-    AuthService --> JWTManager
-    JWTManager --> SessionManager
-    SessionManager --> SessionCache
-    SessionManager -.-> Redis
-    AuthController --> Dashboard
+    UserController --> UserService
+    JobCardController --> JobCardService
+    JobAssignmentController --> JobAssignmentService
+    ReportController --> ReportingService
+    WireframeController --> DashboardService
 
-    CSRFProtection --> AuthController
-    RateLimiter --> AuthController
+    %% Service Layer Internal Dependencies
+    AuthService --> RoleService
+    AuthService --> SessionManager
+    JobCardService --> JobTemplateService
+    JobAssignmentService --> JobCardService
+    DashboardService --> RoleService
+    UserService --> RoleService
+
+    %% Security Layer
+    AuthService --> JWTManager
+    AuthService --> CookieManager
+    SessionManager --> SecurityConfig
+    AuthService --> AuditingConfig
+
+    %% Event Processing Flow
+    JobCardService --> EventPublisher
+    UserService --> EventPublisher
+    EventPublisher --> JobCardEvents
+    EventPublisher --> UserEvents
+    UserEvents --> EmailService
+
+    %% Data Access Flow
+    UserService --> UserRepo
+    RoleService --> RoleRepo
+    JobCardService --> JobCardRepo
+    JobTemplateService --> TemplateRepo
+    JobAssignmentService --> AssignmentRepo
+    ReportingService --> ProductionRepo
+    JobAssignmentService --> MachineRepo
+
+    %% Caching Flow
+    SessionManager --> InMemoryCache
+    InMemoryCache --> UserSessionCache
+    SessionManager -.-> RedisCache
+    RedisCache -.-> UserSessionCache
+
+    %% Database Flow
+    UserRepo --> UserTables
+    RoleRepo --> UserTables
+    JobCardRepo --> JobCardTables
+    TemplateRepo --> JobCardTables
+    AssignmentRepo --> JobCardTables
+    ProductionRepo --> ProductionTables
+    MachineRepo --> ConfigTables
+
+    %% External Services Flow
+    AuthService --> Cognito
+    EmailService --> SES
+    ReportingService --> Lambda
+    JobCardService --> S3
+
+    %% Monitoring Flow
+    LoggingAspect -.-> AuthService
+    LoggingAspect -.-> JobCardService
+    LoggingAspect -.-> UserService
+    RequestFilter -.-> Gateway
+    ErrorHandler -.-> AuthController
+    ErrorHandler -.-> JobCardController
+    Metrics -.-> AuthService
+    HealthCheck -.-> UserTables
+
+    %% Future Integration (Dotted lines)
+    LoggingAspect -.-> ElasticSearch
+    ProductionRepo -.-> InfluxDB
+    JobCardRepo -.-> MongoDB
+
+    %% Styling
+    classDef clientLayer fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef gatewayLayer fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef controllerLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef serviceLayer fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef securityLayer fill:#ffebee,stroke:#b71c1c,stroke-width:2px
+    classDef eventLayer fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    classDef dataLayer fill:#e3f2fd,stroke:#0d47a1,stroke-width:2px
+    classDef cacheLayer fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef dbLayer fill:#e0f2f1,stroke:#00695c,stroke-width:2px
+    classDef externalLayer fill:#fff8e1,stroke:#ff6f00,stroke-width:2px
+    classDef monitoringLayer fill:#f9fbe7,stroke:#827717,stroke-width:2px
+    classDef futureLayer fill:#efebe9,stroke:#3e2723,stroke-width:2px,stroke-dasharray: 5 5
+
+    class UI,Login,Dashboard,JobCardUI,ReportsUI,AdminUI clientLayer
+    class Gateway,CSRF,RateLimit,CORS gatewayLayer
+    class AuthController,UserController,JobCardController,JobAssignmentController,ReportController,WireframeController controllerLayer
+    class AuthService,UserService,RoleService,JobCardService,JobAssignmentService,JobTemplateService,DashboardService,ReportingService,SessionManager serviceLayer
+    class JWTManager,CookieManager,SecurityConfig,AuditingConfig securityLayer
+    class EventPublisher,JobCardEvents,UserEvents,EmailService eventLayer
+    class UserRepo,RoleRepo,JobCardRepo,TemplateRepo,AssignmentRepo,ProductionRepo,MachineRepo dataLayer
+    class InMemoryCache,RedisCache,UserSessionCache cacheLayer
+    class UserTables,JobCardTables,AuditTables,ProductionTables,ConfigTables dbLayer
+    class Cognito,SES,S3,Lambda externalLayer
+    class LoggingAspect,RequestFilter,ErrorHandler,Metrics,HealthCheck monitoringLayer
+    class ElasticSearch,InfluxDB,MongoDB futureLayer

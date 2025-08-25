@@ -9,11 +9,11 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @Configuration
 @EnableJpaRepositories(basePackages = "com.protomil.core.jobcard.repository")
-@EnableJpaAuditing(auditorAwareRef = "auditorProvider")
+@EnableJpaAuditing(auditorAwareRef = "jobCardAuditorProvider")
 public class JobCardRepositoryConfig {
 
     @Bean
-    public AuditorAware<Long> auditorProvider() {
+    public AuditorAware<Long> jobCardAuditorProvider() {
         return new AuditorAwareImpl();
     }
 }
